@@ -103,6 +103,7 @@ CMakeUserPresets.json
 # ==============================================================================
 
 .vagrant
+/.worktrees/
 /attic/
 /content/
 /third_party/binutils/binutils-2.24.tar.gz
