@@ -13,6 +13,8 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <string>
+#include <vector>
 
 namespace xe::hid {
 
@@ -22,6 +24,43 @@ constexpr size_t kFigureBlockCount = kFigureSize / kFigureBlockSize;
 
 using PortalSlot = uint8_t;
 using FigureHandle = uint64_t;
+using FigureBlock = std::array<uint8_t, kFigureBlockSize>;
+
+struct FigureIdentity {
+  uint16_t character_id = 0;
+  uint16_t variant_id = 0;
+};
+
+enum class FigureValidationCode {
+  kWrongSize,
+  kInvalidBcc,
+  kInvalidTagConfiguration,
+  kInvalidSectorTrailer,
+  kInvalidChecksum,
+  kDecryptFailure,
+  kUnknownIdentity,
+  kUnverifiedCrypto,
+  kUnverifiedChecksums,
+};
+
+enum class FigureIssueSeverity { kWarning, kError };
+
+struct FigureValidationIssue {
+  FigureValidationCode code;
+  FigureIssueSeverity severity;
+  size_t offset;
+  std::string message;
+};
+
+struct FigureValidationReport {
+  std::vector<FigureValidationIssue> issues;
+  bool structure_checked = false;
+
+  // Safe for structural inspection only, not proof of a playable figure or
+  // permission to overwrite an imported file.
+  bool IsSafeToLoad() const;
+  bool IsFullyValid() const;
+};
 
 enum class FigureIoError {
   kNone,
@@ -35,7 +74,7 @@ enum class FigureIoError {
 
 struct FigureBlockReadResult {
   FigureIoError error = FigureIoError::kNone;
-  std::array<uint8_t, kFigureBlockSize> data{};
+  FigureBlock data{};
 };
 
 struct FigureBlockWriteResult {

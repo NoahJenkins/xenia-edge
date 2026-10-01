@@ -31,8 +31,8 @@ constexpr std::array<CommandReply, 3> kTraptaniumReplies{{
 
 }  // namespace
 
-Xbox360PortalProtocol::Xbox360PortalProtocol(ProtocolFigureIo&, PortalSlotState&,
-                                           PortalClock&) {
+Xbox360PortalProtocol::Xbox360PortalProtocol(ProtocolFigureIo&,
+                                             PortalSlotState&, PortalClock&) {
   // Figure I/O and timing remain gated. Keep the planned injection boundary,
   // without retaining unused references or inventing activation side effects.
 }

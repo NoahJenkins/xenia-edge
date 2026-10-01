@@ -20,7 +20,7 @@ class ProtocolFigureIo {
  public:
   virtual ~ProtocolFigureIo() = default;
   virtual FigureBlockReadResult ReadBlock(PortalSlot slot,
-                                         uint8_t block) const = 0;
+                                          uint8_t block) const = 0;
   virtual FigureBlockWriteResult WriteBlock(
       PortalSlot slot, uint8_t block,
       std::span<const uint8_t, kFigureBlockSize> data) = 0;

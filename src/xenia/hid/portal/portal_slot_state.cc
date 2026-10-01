@@ -20,8 +20,9 @@ PortalSlotState::PortalSlotState() {
 }
 
 bool PortalSlotState::Contains(FigureHandle figure) const {
-  return std::any_of(slots_.begin(), slots_.end(),
-                     [figure](const auto& slot) { return slot.figure == figure; }) ||
+  return std::any_of(
+             slots_.begin(), slots_.end(),
+             [figure](const auto& slot) { return slot.figure == figure; }) ||
          std::find(pending_.begin(), pending_.end(), figure) != pending_.end();
 }
 
@@ -103,7 +104,8 @@ std::optional<PortalSlotSnapshot> PortalSlotState::Get(PortalSlot slot) const {
   return slots_[slot];
 }
 
-std::array<PortalSlotSnapshot, kPortalSlotCount> PortalSlotState::Snapshot() const {
+std::array<PortalSlotSnapshot, kPortalSlotCount> PortalSlotState::Snapshot()
+    const {
   return slots_;
 }
 

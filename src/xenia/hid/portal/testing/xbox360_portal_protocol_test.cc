@@ -76,10 +76,14 @@ TEST_CASE("Malformed report does not mutate slot state or pending replies",
   Fixture fixture;
   REQUIRE(fixture.slots.Insert(2, 123));
   const auto before = fixture.slots.Snapshot();
-  const std::vector<std::vector<uint8_t>> invalid{
-      {}, {0x0B}, {0x0B, 0x14}, {0x00, 0x14, 0x52},
-      {0x0B, 0x00, 0x52}, {0x0B, 0x14, 0x41}, {0x0B, 0x14, 0x4D},
-      std::vector<uint8_t>(33, 0)};
+  const std::vector<std::vector<uint8_t>> invalid{{},
+                                                  {0x0B},
+                                                  {0x0B, 0x14},
+                                                  {0x00, 0x14, 0x52},
+                                                  {0x0B, 0x00, 0x52},
+                                                  {0x0B, 0x14, 0x41},
+                                                  {0x0B, 0x14, 0x4D},
+                                                  std::vector<uint8_t>(33, 0)};
   for (const auto& report : invalid) {
     REQUIRE(fixture.protocol.SubmitHostReport(report) ==
             ProtocolError::kMalformedReport);
