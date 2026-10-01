@@ -11,3 +11,7 @@ if(WIN32)
   target_link_libraries(xenia-hid-portal PUBLIC libusb)
 endif()
 xe_target_defaults(xenia-hid-portal)
+
+if(XENIA_BUILD_TESTS)
+  add_subdirectory(testing)
+endif()
