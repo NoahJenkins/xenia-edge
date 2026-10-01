@@ -13,6 +13,7 @@
 #include <array>
 #include <atomic>
 #include <bitset>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <set>
@@ -21,7 +22,7 @@
 #include "xenia/base/mutex.h"
 #include "xenia/hid/input.h"
 #include "xenia/hid/input_driver.h"
-#include "xenia/hid/portal/portal.h"
+#include "xenia/hid/portal/portal_manager.h"
 #include "xenia/xbox.h"
 
 namespace xe {
@@ -35,7 +36,8 @@ namespace hid {
 
 class InputSystem {
  public:
-  explicit InputSystem(xe::ui::Window* window);
+  InputSystem(xe::ui::Window* window,
+              const std::filesystem::path& storage_root);
   ~InputSystem();
 
   xe::ui::Window* window() const { return window_; }
@@ -70,7 +72,7 @@ class InputSystem {
 
   uint32_t GetLastUsedSlot() const { return last_used_slot; }
 
-  Portal* GetPortal() { return portal_.get(); }
+  PortalManager* GetPortal() { return portal_manager_.get(); }
 
   std::unique_lock<xe_unlikely_mutex> lock();
 
@@ -147,7 +149,7 @@ class InputSystem {
 
   std::vector<std::unique_ptr<InputDriver>> drivers_;
 
-  std::unique_ptr<Portal> portal_;
+  std::unique_ptr<PortalManager> portal_manager_;
 
   std::bitset<XUserMaxUserCount> connected_slots = {};
   std::array<SlotBinding, XUserMaxUserCount> slot_bindings_{};

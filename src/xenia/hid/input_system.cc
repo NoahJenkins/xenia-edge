@@ -17,11 +17,8 @@
 #include "xenia/base/profiling.h"
 #include "xenia/hid/hid_flags.h"
 #include "xenia/hid/input_driver.h"
+#include "xenia/hid/portal/portal_flags.h"
 #include "xenia/kernel/util/shim_utils.h"
-
-#ifdef XE_PLATFORM_WIN32
-#include "xenia/hid/portal/hardware_portal.h"
-#endif  // XE_PLATFORM_WIN32
 
 namespace xe {
 namespace hid {
@@ -41,10 +38,12 @@ DEFINE_transient_string(
     "across out-of-process relaunch. Not persisted.",
     "HID");
 
-InputSystem::InputSystem(xe::ui::Window* window) : window_(window) {
-#ifdef XE_PLATFORM_WIN32
-  portal_ = std::make_unique<HardwarePortal>();
-#endif  // XE_PLATFORM_WIN32
+InputSystem::InputSystem(xe::ui::Window* window,
+                         const std::filesystem::path& storage_root)
+    : window_(window) {
+  portal_manager_ = std::make_unique<PortalManager>(
+      storage_root, ParsePortalBackend(::cvars::portal_backend),
+      ::cvars::skylanders_figure_library);
 }
 
 InputSystem::~InputSystem() = default;

@@ -4,8 +4,9 @@
 
 Verified locally on 2026-10-01 on macOS ARM64, on branch
 `agent/skylanders-virtual-portal`. This is a tested core foundation, not a
-working in-game virtual portal. The existing emulator runtime still uses its
-original physical-only Windows portal path.
+working in-game virtual portal. XAM now reaches a backend manager. Windows
+physical portal behavior is delegated to the existing implementation; virtual
+guest reports remain closed pending protocol evidence.
 
 The user approved continuation and specified public evidence because no
 physical portal is available. Work stayed in the existing isolated worktree.
@@ -26,13 +27,15 @@ was performed.
 | Atomic writer | Three commit outcomes, retained complete candidates, native POSIX/Windows adapters; Mac tests pass | `e209b0dda` plus Mac full-flush follow-up |
 | Figure storage | Managed/read-only handles, import/export, XXH3 conflict checks, uncertain-save I/O block, explicit durable recovery | Local continuation |
 | Session state | Versioned TOML; path and fingerprint checks; durable pending saves before figure writes; recovery across restarts | Local continuation |
+| Portal manager | Explicit backend selection; safe virtual slot restore and library operations; physical delegation; virtual guest reports closed | Local continuation |
 | Test wiring | Portal target in default test list and existing Linux CI build job; Python build-path regression in lint job | `113227b58` |
 
 The protocol source is not connected to XAM. Activation acknowledgements do
 not implement unverified activation/status side effects. Status scheduling,
-query/write commands, virtual backend selection, library UI,
-creation/reset, special objects, and audio remain unimplemented. Session slot
-restoration is parsed but not connected to a manager.
+query/write commands, library UI, creation/reset, special objects, and audio
+remain unimplemented. The selected virtual backend returns device not
+connected to guest traffic. The manager restores safe session slots and
+supports local add, remove, replace, move, import, export, and recovery calls.
 
 The four replays are software-reference tests assembled from corroborated
 public behavior. They are not captures and do not prove Xbox title behavior.
@@ -41,7 +44,8 @@ records exact revisions and unresolved source disagreements.
 
 ### Verification
 
-- Native checked portal suite: **49 test cases, 1,192 assertions passed**.
+- Native checked portal suite: **56 test cases, 1,256 assertions passed** after
+  manager integration. The earlier core-only run passed 49 / 1,192.
 - The same core and tests compiled separately with Apple Clang AddressSanitizer
   and UndefinedBehaviorSanitizer: **49 cases, 1,192 assertions passed**, no
   sanitizer report. This harness uses Catch2 directly and has no emulator
@@ -133,6 +137,27 @@ native runtime tested for these additions; Windows and Linux adapters need
 native checks. The session root is configurable for future manager use; the
 standalone store defaults it to the library root.
 
+### Runtime manager continuation
+
+The [runtime architecture](../architecture/skylanders-portal.md) describes the
+new XAM to manager boundary. `portal_backend` persists under HID and defaults
+to `physical` on Windows or `disabled` elsewhere. An unknown value fails
+closed. `skylanders_figure_library` persists under Storage; an empty value
+uses `<storage_root>/skylanders/figures`. The session sidecar remains at
+`<storage_root>/skylanders/portal-session.toml` even with a custom library.
+
+The virtual manager restores safe, fingerprint-matched slots and keeps
+unrelated stale entries and pending saves when a slot changes. A failed
+manifest save leaves live slots unchanged and stops further management until
+the manager is reconstructed. Import and export keep source files unchanged;
+results expose store errors and atomic commit outcomes. The physical backend
+still receives USB hotplug and raw XAM read/write calls on Windows.
+
+The virtual guest route is intentionally disconnected. These tests do not
+prove title recognition, report timing, or gameplay. There is no in-game
+portal management UI yet. Windows physical behavior still needs a native
+regression test.
+
 ### Approved save correction
 
 [ADR 0002](../adr/0002-portal-save-commit-outcomes.md) was accepted on
@@ -172,8 +197,8 @@ changes observed before saving, but are not an interprocess compare-and-swap.
 
 ## Open Questions
 
-- Connect the tested storage and session layers to the manager, XAM, and
-  backend-neutral UI. Session slot restoration remains pending.
+- Add the backend-neutral in-game UI, then connect only verified Xbox guest
+  commands. The storage/session layers now reach the manager and XAM boundary.
 - Resolve status timing, XAM empty-poll semantics, legacy profiles, and write
   acknowledgement/failure behavior using further public primary evidence.
 - Establish independent crypto/checksum vectors and catalog provenance.

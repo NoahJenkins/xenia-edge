@@ -10,19 +10,22 @@ Last Updated: 2026-10-01
 - [ ] Establish independent Key A, AES input, and checksum-family 1/2/3/6
       vectors. Correct the plan's UID-only key-derivation signature first.
 - [ ] Establish record-level provenance and blank rules for figure creation.
-- [ ] Finish creator/reset, XAM backend selection, and UI.
+- [ ] Finish creator/reset and the in-game UI.
       Creation remains gated on verified figure format and provenance.
-- [ ] Connect save errors, session restoration, and safe library operations
-      to the manager and XAM.
+- [ ] Connect verified figure commands and save errors to XAM. The manager
+      exposes local store errors, but virtual guest traffic stays closed.
 - [ ] Generate PPC test maps before treating the Mac default CPU suite as
       verified. The runner currently reports zero loaded CPU tests.
 - [ ] Run native Linux CI, Docker parity, Windows tests, and AppImage checks.
       The Linux workflow now includes the portal suite, but has not run for
       this local branch.
-- [ ] Add the runtime architecture document after Xenia integration exists.
 - [ ] Complete SteamOS acceptance and the six-game compatibility matrix.
 
 ## Done
+
+- [x] Add explicit portal backend settings and manager delegation to XAM.
+- [x] Restore safe virtual slots and persist local management operations.
+- [x] Add the current runtime architecture document.
 
 - [x] Install the Apple Metal Toolchain and pass the checked Mac app build.
 - [x] Fix the previously reported `trace_viewer.cc` size-format errors.

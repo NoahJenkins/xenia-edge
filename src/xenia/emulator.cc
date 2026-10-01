@@ -348,7 +348,8 @@ X_STATUS Emulator::Setup(
   // same thread, so drivers are attached here on the emulator thread.
   if (!input_system_) {
     XELOGI("{}: Initializing HID...", __func__);
-    input_system_ = std::make_unique<xe::hid::InputSystem>(display_window_);
+    input_system_ =
+        std::make_unique<xe::hid::InputSystem>(display_window_, storage_root_);
     if (!input_system_) {
       XELOGE("{}: Cannot initalize input_system!", __func__);
       return X_STATUS_NOT_IMPLEMENTED;
