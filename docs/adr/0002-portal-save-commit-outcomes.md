@@ -2,9 +2,9 @@
 
 ## Status
 
-Proposed on 2026-10-01. Not accepted or implemented.
+Accepted on 2026-10-01 by explicit user approval.
 
-If accepted, this supersedes only ADR 0001's promise that every failed save
+This supersedes only ADR 0001's promise that every failed save
 leaves the old on-disk image intact. Its format, ownership, and durability
 requirements otherwise remain in effect.
 
@@ -33,7 +33,7 @@ The design therefore needs an explicit result for failure after replacement.
 
 ## Decision
 
-Proposed option 1:
+Adopt option 1:
 
 - `NotReplaced`: replacement did not happen. Keep old memory and destination
   bytes. Preserve a complete temporary candidate only when useful for recovery.
@@ -62,6 +62,7 @@ memory. A storage failure after replacement can leave the latest update
 visible without a confirmed durability guarantee. The user must resolve the
 storage error and reload that figure before game I/O resumes.
 
-This is a change to save-error behavior. Implementation waits for approval
-under the global AGENTS.md requirement for written approval of material
-workflow semantics changes. ADR 0001 remains unchanged while this is proposed.
+The user approved this change to save-error behavior under the global
+AGENTS.md requirement for written approval of material workflow semantics
+changes. ADR 0001 remains unchanged; this ADR supersedes its conflicting
+save-error guarantee.

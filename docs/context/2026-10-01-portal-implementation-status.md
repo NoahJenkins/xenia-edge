@@ -105,10 +105,8 @@ rather than caching disposable `/tmp` executable paths.
 
 ## Open Questions
 
-- Decide [proposed ADR 0002](../adr/0002-portal-save-commit-outcomes.md) before
-  writing the persistence layer. The current design's guarantee about old
-  bytes after every failure cannot hold after a successful replacement and a
-  failed directory flush. An approval request is pending; it is not accepted.
+- ADR 0002 was accepted by the user on 2026-10-01. Implement its explicit
+  commit outcomes and block figure I/O after an uncertain save.
 - Resolve status timing, XAM empty-poll semantics, legacy profiles, and write
   acknowledgement/failure behavior using further public primary evidence.
 - Establish independent crypto/checksum vectors and catalog provenance.

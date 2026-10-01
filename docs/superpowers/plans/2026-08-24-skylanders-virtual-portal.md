@@ -880,7 +880,9 @@ struct AtomicWriteResult {
 - [ ] **Step 1: Write failing filesystem tests**
 
 Test spaces and non-ASCII paths, replacement, read-only destination directory,
-forced write failure, and preservation of old bytes after every failure. Use a
+forced write failure, and preservation of old bytes before replacement.
+Apply accepted ADR 0002: distinguish NotReplaced, Durable, and
+ReplacedDurabilityUnknown; assert the new disk bytes after a final flush error. Use a
 unique directory below the host temporary directory and delete only that exact
 validated test directory.
 
@@ -959,7 +961,10 @@ in-memory image. Do not use a pathname as a handle.
 
 Clone the image, replace one valid block, compare current file identity and
 fingerprint, atomically write the complete candidate, then commit memory. A
-failure returns `kPersistenceFailed` and keeps old disk and memory bytes.
+failure before replacement returns `kPersistenceFailed` and keeps old disk
+and memory bytes. Under accepted ADR 0002, failure after replacement keeps
+the candidate in memory, reports uncertain durability, and blocks all figure
+I/O until explicit recovery validates and durably saves the actual file.
 
 - [ ] **Step 5: Run store and atomic tests, then commit**
 

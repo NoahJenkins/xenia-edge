@@ -10,7 +10,7 @@ Last Updated: 2026-10-01
 - [ ] Establish independent Key A, AES input, and checksum-family 1/2/3/6
       vectors. Correct the plan's UID-only key-derivation signature first.
 - [ ] Establish record-level provenance and blank rules for figure creation.
-- [ ] Decide proposed ADR 0002 before implementing atomic save-error behavior.
+- [x] Accept ADR 0002 save-error correction (user approval, 2026-10-01).
 - [ ] Implement persistence, library management, XAM backend selection, and UI.
 - [ ] Install/enable the host Metal Toolchain before full Mac app verification.
       The full checked build currently fails in Metal shader generation.
