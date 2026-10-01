@@ -11,6 +11,8 @@
 
 #include <algorithm>
 
+#include "xenia/hid/portal/figure_crypto.h"
+
 namespace xe::hid {
 
 bool FigureValidationReport::IsSafeToLoad() const {
@@ -78,6 +80,13 @@ FigureValidationReport FigureImage::Validate() const {
                              FigureIssueSeverity::kError, 4,
                              "The tag identifier check byte does not match."});
   }
+  const auto stored_crc =
+      static_cast<uint16_t>(bytes_[0x1E] | (uint16_t{bytes_[0x1F]} << 8));
+  if (ComputeFigureCrc16(bytes().first<0x1E>()) != stored_crc) {
+    report.issues.push_back({FigureValidationCode::kInvalidChecksum,
+                             FigureIssueSeverity::kError, 0x1E,
+                             "The figure identifier checksum does not match."});
+  }
   constexpr std::array<uint8_t, 3> kTagConfiguration{0x81, 0x01, 0x0F};
   for (size_t i = 0; i < kTagConfiguration.size(); ++i) {
     if (bytes_[5 + i] != kTagConfiguration[i]) {
@@ -101,8 +110,8 @@ FigureValidationReport FigureImage::Validate() const {
       {FigureValidationCode::kUnverifiedCrypto, FigureIssueSeverity::kWarning,
        0, "Sector keys and encrypted data have not been verified."});
   report.issues.push_back({FigureValidationCode::kUnverifiedChecksums,
-                           FigureIssueSeverity::kWarning, 0x1E,
-                           "Figure checksums have not been verified."});
+                           FigureIssueSeverity::kWarning, 0x80,
+                           "Gameplay checksums have not been verified."});
   report.issues.push_back(
       {FigureValidationCode::kUnknownIdentity, FigureIssueSeverity::kWarning,
        0x10, "The character and variant have not been verified."});

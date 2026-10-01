@@ -95,12 +95,39 @@ This is an engineering boundary, not legal advice.
 
 ## Recommendations
 
+### Identifier checksum verification on 2026-10-01
+
+The type-0 identifier checksum is now implemented. Expected test values were
+computed independently using Python `binascii.crc_hqx(input, 0xFFFF)`:
+
+| Synthetic input | Expected CRC |
+| --- | --- |
+| Empty input | `FFFF` |
+| ASCII `123456789` | `29B1` |
+| Thirty zero bytes | `2A45` |
+| Thirty bytes increasing from `00` through `1D` | `3554` |
+
+The parser checks bytes `00..1D` against the little-endian value at `1E..1F`.
+Tests also flip each bit of a synthetic 30-byte header and reject a changed
+stored checksum. These vectors contain no figure dump data.
+
+The structural test fixture uses the independently tested CRC routine to
+populate its identifier checksum; its gameplay data, sector keys, and crypto
+are still synthetic and unverified. A successful structural parse is suitable
+for inspection, not proof of a valid playable figure or permission to write
+an imported source. `IsFullyValid()` remains false for these fixtures.
+
+The saved plan's UID-only `DeriveFigureBlockKey` signature is insufficient for
+the recorded blocks-0-and-1 derivation input. It has not been implemented.
+Independent derivation vectors and a corrected interface remain required.
+
+### Remaining recommendations
+
 1. Implement the exact-size raw parser and the independently confirmed fields
    first.
 2. Reject truncation and trailing bytes. Report structural failures without
    mutating or overwriting the source.
-3. Build independent synthetic CRC vectors before implementing type-0
-   validation.
+3. Keep the independent CRC vectors above as the type-0 validation reference.
 4. Hold AES, Key A, checksum families 1/2/3/6, creation, and reset behind the
    evidence gate until independent vectors are available.
 5. Keep advanced gameplay editing outside the first milestone.

@@ -77,7 +77,7 @@ TEST_CASE("Structural success does not claim crypto or identity verification",
   REQUIRE(HasIssue(report, FigureValidationCode::kUnverifiedCrypto,
                    FigureIssueSeverity::kWarning, 0));
   REQUIRE(HasIssue(report, FigureValidationCode::kUnverifiedChecksums,
-                   FigureIssueSeverity::kWarning, 0x1E));
+                   FigureIssueSeverity::kWarning, 0x80));
   REQUIRE(HasIssue(report, FigureValidationCode::kUnknownIdentity,
                    FigureIssueSeverity::kWarning, 0x10));
 }
@@ -158,6 +158,20 @@ TEST_CASE("Parser clears old diagnostics on each attempt",
   REQUIRE(report.IsSafeToLoad());
   REQUIRE_FALSE(HasIssue(report, FigureValidationCode::kWrongSize,
                          FigureIssueSeverity::kError, 0));
+}
+
+TEST_CASE("Identifier checksum corruption is rejected without repair",
+          "[skylanders][figure]") {
+  for (const size_t offset : {0x12, 0x1E, 0x1F}) {
+    auto source = MakeBytes();
+    source[offset] ^= 1;
+    const auto before = source;
+    FigureValidationReport report;
+    REQUIRE_FALSE(FigureImage::Parse(source, report));
+    REQUIRE(HasIssue(report, FigureValidationCode::kInvalidChecksum,
+                     FigureIssueSeverity::kError, 0x1E));
+    REQUIRE(source == before);
+  }
 }
 
 }  // namespace xe::hid

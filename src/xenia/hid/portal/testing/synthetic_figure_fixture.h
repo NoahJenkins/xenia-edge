@@ -12,6 +12,7 @@
 
 #include <array>
 
+#include "xenia/hid/portal/figure_crypto.h"
 #include "xenia/hid/portal/figure_types.h"
 
 namespace xe::hid::testing {
@@ -43,6 +44,11 @@ inline std::array<uint8_t, kFigureSize> MakeSyntheticFigureBytes(
     bytes[offset + 2] = sector == 0 ? 0x0F : 0x08;
     bytes[offset + 3] = 0x69;
   }
+  // The CRC routine is tested against independent literal vectors separately.
+  const auto crc =
+      ComputeFigureCrc16(std::span<const uint8_t>(bytes).first<30>());
+  bytes[0x1E] = static_cast<uint8_t>(crc);
+  bytes[0x1F] = static_cast<uint8_t>(crc >> 8);
   return bytes;
 }
 
