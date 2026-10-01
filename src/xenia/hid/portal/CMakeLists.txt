@@ -1,6 +1,7 @@
 add_library(xenia-hid-portal STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/portal.h
   ${CMAKE_CURRENT_SOURCE_DIR}/portal.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/portal_slot_state.cc
 )
 
 if(WIN32)
