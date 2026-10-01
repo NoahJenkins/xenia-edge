@@ -44,6 +44,15 @@ class AtomicFileWriter {
   // The destination parent must already exist. Callers serialize writes.
   virtual AtomicWriteResult Write(const std::filesystem::path& destination,
                                   std::span<const uint8_t> bytes) = 0;
+  // Publishes only if no destination exists. The native writer implements an
+  // atomic no-replace operation; other writers fail closed by default.
+  virtual AtomicWriteResult WriteNew(const std::filesystem::path& destination,
+                                     std::span<const uint8_t> bytes) {
+    return {AtomicCommitOutcome::kNotReplaced,
+            AtomicWriteError::kReplaceFailed,
+            {},
+            std::make_error_code(std::errc::operation_not_supported)};
+  }
 };
 
 // Platform transaction boundary. Each object is used for exactly one save.
@@ -57,6 +66,9 @@ class AtomicFileTransaction {
   virtual std::error_code Write(std::span<const uint8_t> bytes) = 0;
   virtual std::error_code FlushFile() = 0;
   virtual std::error_code Replace() = 0;
+  virtual std::error_code PublishNew() {
+    return std::make_error_code(std::errc::operation_not_supported);
+  }
   virtual std::error_code FlushCommit() = 0;
   // Only call after a complete Write, before replacement.
   virtual std::filesystem::path RetainTemporary() = 0;

@@ -28,13 +28,16 @@ is documented; the full protocol evidence gate is still open. Task 5 implements
 only corroborated R/A/M replies and remains disconnected from XAM. Task 7 has
 identifier CRC validation only. Task 17 has default-test and Linux workflow
 wiring only; hosted/platform checks are pending. Task 9 has native atomic
-writers and passing Mac tests. Task 10 has managed/read-only handles, conflict
-checks, durable writes, and recovery; import/export/reset remain pending.
+writers and passing Mac tests. Task 10 has managed/read-only handles, import/export, conflict checks, durable
+writes, and recovery; creator/reset remain evidence-gated. Task 12 has a
+versioned session manifest and durable pending-save records; manager-driven
+slot restoration remains pending.
 
 The [current status note](../../context/2026-10-01-portal-implementation-status.md)
 records actual implementation, test results, and rulings. Accepted
 [ADR 0002](../../adr/0002-portal-save-commit-outcomes.md) governs save outcomes
-and recovery. The original Task 7 UID-only key signature is a
+and recovery. [ADR 0003](../../adr/0003-persist-pending-portal-figure-saves.md)
+extends the block across process restarts. The original Task 7 UID-only key signature is a
 known defect and must not be transcribed into code.
 
 ## Global Constraints

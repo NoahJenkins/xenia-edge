@@ -104,6 +104,17 @@ class PosixTransaction final : public AtomicFileTransaction {
     temporary_.clear();
     return {};
   }
+  std::error_code PublishNew() override {
+    // Hard linking publishes the complete candidate only when the name is
+    // absent. Both files are in the same directory and filesystem.
+    if (link(temporary_.c_str(), destination_.c_str()) == -1) {
+      return LastError();
+    }
+    if (unlink(temporary_.c_str()) == 0) {
+      temporary_.clear();
+    }
+    return {};
+  }
   std::error_code FlushCommit() override {
     if (auto error = Sync(directory_)) {
       return error;

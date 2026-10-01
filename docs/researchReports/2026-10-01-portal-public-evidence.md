@@ -60,6 +60,10 @@ The GiantsRecomp protocol document was also inspected at
 `a397a11f98f7f16ec76bfa9b85f379cd69682fdc`. It says `W` sends no reply, whereas
 the current portal library queues a `57` acknowledgement. This disagreement
 prevents treating that document as a complete write replay reference.
+[Brandon Wilson's original notes](https://gist.github.com/skylandersNFC/5c9fb3debc11c1ea194ed6ddc9fb8faf)
+describe a third write response, an empty `R` packet. These are protocol
+observations, not a complete capture with retry and failure outcomes. The
+write acknowledgement remains unconfirmed.
 
 - The new software portal keeps added status for eight reports. Cemu advances
   queued transitions per status read. Neither establishes a common Xbox timing

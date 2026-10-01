@@ -274,4 +274,205 @@ TEST_CASE("Filesystem read-only state blocks writes and recovery",
             FigureIoError::kUnavailable);
   }
 }
+TEST_CASE("Pending figure save survives store recreation",
+          "[skylanders][store][recovery]") {
+  StoreFixture fixture;
+  FigureBlock changed{};
+  changed.fill(0xA5);
+  {
+    auto writer = std::make_unique<ControlledWriter>();
+    writer->outcome = AtomicCommitOutcome::kReplacedDurabilityUnknown;
+    FigureStore first(fixture.root, std::move(writer));
+    const auto loaded = first.LoadManaged(fixture.file);
+    REQUIRE(loaded.handle);
+    REQUIRE(first.WriteBlock(*loaded.handle, 8, changed).error ==
+            FigureIoError::kPersistenceFailed);
+  }
+  FigureStore restarted(fixture.root, CreateNativeAtomicFileWriter());
+  REQUIRE(restarted.LoadManaged(fixture.file).error ==
+          FigureStoreError::kRecoveryRequired);
+  REQUIRE(restarted.LoadReadOnly(fixture.file).error ==
+          FigureStoreError::kRecoveryRequired);
+  const auto recovered = restarted.Recover(fixture.file);
+  REQUIRE(recovered.handle);
+  REQUIRE(restarted.ReadBlock(*recovered.handle, 8).data == changed);
+  REQUIRE(restarted.LoadManaged(fixture.file).error ==
+          FigureStoreError::kAlreadyLoaded);
+  FigureStore next_launch(fixture.root, CreateNativeAtomicFileWriter());
+  REQUIRE(next_launch.LoadManaged(fixture.file).handle);
+}
+
+TEST_CASE("Restarted recovery rejects a different figure",
+          "[skylanders][store][recovery]") {
+  StoreFixture fixture;
+  {
+    auto writer = std::make_unique<ControlledWriter>();
+    writer->outcome = AtomicCommitOutcome::kReplacedDurabilityUnknown;
+    FigureStore first(fixture.root, std::move(writer));
+    const auto loaded = first.LoadManaged(fixture.file);
+    REQUIRE(loaded.handle);
+    REQUIRE(first.WriteBlock(*loaded.handle, 8, FigureBlock{}).error ==
+            FigureIoError::kPersistenceFailed);
+  }
+  fixture.Put(testing::MakeSyntheticFigureBytes(99, 2, {3, 4, 5, 6}));
+  FigureStore restarted(fixture.root, CreateNativeAtomicFileWriter());
+  REQUIRE(restarted.Recover(fixture.file).error ==
+          FigureStoreError::kExternalConflict);
+  REQUIRE(restarted.LoadManaged(fixture.file).error ==
+          FigureStoreError::kRecoveryRequired);
+}
+TEST_CASE("Pending saves block another live store's reads and exports",
+          "[skylanders][store][recovery]") {
+  StoreFixture fixture;
+  FigureStore first(fixture.root, CreateNativeAtomicFileWriter());
+  const auto first_handle = first.LoadManaged(fixture.file).handle;
+  REQUIRE(first_handle);
+  auto writer = std::make_unique<ControlledWriter>();
+  writer->outcome = AtomicCommitOutcome::kReplacedDurabilityUnknown;
+  FigureStore second(fixture.root, std::move(writer));
+  const auto second_handle = second.LoadManaged(fixture.file).handle;
+  REQUIRE(second_handle);
+  REQUIRE(second.WriteBlock(*second_handle, 8, FigureBlock{}).error ==
+          FigureIoError::kPersistenceFailed);
+  REQUIRE(first.ReadBlock(*first_handle, 8).error ==
+          FigureIoError::kUnavailable);
+  REQUIRE(
+      first.Export(*first_handle, fixture.root / "unsafe.sky", false).error ==
+      FigureStoreError::kRecoveryRequired);
+}
+
+TEST_CASE("Corrupt recovery state fails closed",
+          "[skylanders][store][recovery]") {
+  StoreFixture fixture;
+  {
+    std::ofstream state(fixture.root / "portal-session.toml");
+    state << "not valid = [";
+  }
+  FigureStore store(fixture.root, CreateNativeAtomicFileWriter());
+  REQUIRE(store.LoadManaged(fixture.file).error ==
+          FigureStoreError::kRecoveryRequired);
+  REQUIRE_FALSE(store.Recover(fixture.file).handle);
+}
+
+TEST_CASE("Import validates before creating a managed file",
+          "[skylanders][store][library]") {
+  StoreFixture fixture;
+  const auto destination =
+      fixture.root / std::filesystem::path(u8"importé.sky");
+  FigureStore store(fixture.root, CreateNativeAtomicFileWriter());
+  SECTION("valid") {
+    auto loaded = store.Import(fixture.file, destination);
+    REQUIRE(loaded.handle);
+    REQUIRE(loaded.error == FigureStoreError::kNone);
+    REQUIRE(std::filesystem::exists(destination));
+    REQUIRE(store.ReadBlock(*loaded.handle, 0).error == FigureIoError::kNone);
+    REQUIRE(store.Import(fixture.file, destination).error ==
+            FigureStoreError::kAlreadyExists);
+  }
+  SECTION("short") {
+    fixture.Put(std::span<const uint8_t>(fixture.bytes).first(1023));
+    REQUIRE(store.Import(fixture.file, destination).error ==
+            FigureStoreError::kInvalidImage);
+    REQUIRE_FALSE(std::filesystem::exists(destination));
+  }
+  SECTION("long") {
+    std::vector<uint8_t> bytes(1025);
+    fixture.Put(bytes);
+    REQUIRE(store.Import(fixture.file, destination).error ==
+            FigureStoreError::kInvalidImage);
+    REQUIRE_FALSE(std::filesystem::exists(destination));
+  }
+  SECTION("bad structure") {
+    fixture.bytes[4] ^= 1;
+    fixture.Put(fixture.bytes);
+    REQUIRE(store.Import(fixture.file, destination).error ==
+            FigureStoreError::kInvalidImage);
+    REQUIRE_FALSE(std::filesystem::exists(destination));
+  }
+  SECTION("outside library") {
+    REQUIRE(
+        store.Import(fixture.file, fixture.root.parent_path() / "outside.sky")
+            .error == FigureStoreError::kOutsideLibrary);
+  }
+}
+
+TEST_CASE("Export requires confirmation before replacing a file",
+          "[skylanders][store][library]") {
+  StoreFixture fixture;
+  FigureStore store(fixture.root, CreateNativeAtomicFileWriter());
+  const auto loaded = store.LoadManaged(fixture.file);
+  REQUIRE(loaded.handle);
+  const auto destination =
+      fixture.root / std::filesystem::path(u8"export café.sky");
+  {
+    std::ofstream file(destination);
+    file << "old";
+  }
+  REQUIRE(store.Export(*loaded.handle, destination, false).error ==
+          FigureStoreError::kOverwriteNotConfirmed);
+  std::ifstream before(destination);
+  REQUIRE(std::string(std::istreambuf_iterator<char>(before), {}) == "old");
+  REQUIRE(store.Export(*loaded.handle, destination, true).error ==
+          FigureStoreError::kNone);
+  REQUIRE(std::filesystem::file_size(destination) == kFigureSize);
+  const auto fresh = fixture.root / "new-export.sky";
+  REQUIRE(store.Export(*loaded.handle, fresh, false).error ==
+          FigureStoreError::kNone);
+  REQUIRE(std::filesystem::file_size(fresh) == kFigureSize);
+  const auto other = store.LoadManaged(fresh);
+  REQUIRE(other.handle);
+  REQUIRE(store.Export(*loaded.handle, fresh, true).error ==
+          FigureStoreError::kExternalConflict);
+}
+
+TEST_CASE("Import uncertainty blocks reload across a restart",
+          "[skylanders][store][library]") {
+  StoreFixture fixture;
+  const auto destination = fixture.root / "imported.sky";
+  class UncertainNewWriter final : public AtomicFileWriter {
+   public:
+    AtomicWriteResult Write(const std::filesystem::path& path,
+                            std::span<const uint8_t> bytes) override {
+      return CreateNativeAtomicFileWriter()->Write(path, bytes);
+    }
+    AtomicWriteResult WriteNew(const std::filesystem::path& path,
+                               std::span<const uint8_t> bytes) override {
+      auto result = CreateNativeAtomicFileWriter()->WriteNew(path, bytes);
+      if (result.outcome == AtomicCommitOutcome::kDurable) {
+        result.outcome = AtomicCommitOutcome::kReplacedDurabilityUnknown;
+        result.error = AtomicWriteError::kCommitFlushFailed;
+        result.system_error = std::make_error_code(std::errc::io_error);
+      }
+      return result;
+    }
+  };
+  {
+    FigureStore first(fixture.root, std::make_unique<UncertainNewWriter>());
+    REQUIRE(first.Import(fixture.file, destination).error ==
+            FigureStoreError::kRecoveryRequired);
+    REQUIRE(std::filesystem::exists(destination));
+  }
+  FigureStore restarted(fixture.root, CreateNativeAtomicFileWriter());
+  REQUIRE(restarted.LoadManaged(destination).error ==
+          FigureStoreError::kRecoveryRequired);
+  REQUIRE(restarted.Recover(destination).handle);
+}
+
+TEST_CASE("Failed import with uncleared marker can be retried",
+          "[skylanders][store][library]") {
+  StoreFixture fixture;
+  const auto destination = fixture.root / "retry.sky";
+  PortalSessionStore session(fixture.root, CreateNativeAtomicFileWriter());
+  PortalSession pending;
+  pending.pending_saves.push_back(
+      {destination.filename(), std::string(64, '0'), std::string(64, '1')});
+  REQUIRE(session.Save(pending).success());
+  FigureStore store(fixture.root, CreateNativeAtomicFileWriter());
+  REQUIRE(store.Import(fixture.file, destination).error ==
+          FigureStoreError::kRecoveryRequired);
+  REQUIRE_FALSE(store.Recover(destination).handle);
+  REQUIRE(session.Load().session.pending_saves.empty());
+  REQUIRE(store.Import(fixture.file, destination).handle);
+}
+
 }  // namespace xe::hid

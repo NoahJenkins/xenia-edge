@@ -19,6 +19,16 @@ class TransactionalFileWriter final : public AtomicFileWriter {
       : factory_(std::move(factory)) {}
   AtomicWriteResult Write(const std::filesystem::path& destination,
                           std::span<const uint8_t> bytes) override {
+    return WriteImpl(destination, bytes, false);
+  }
+  AtomicWriteResult WriteNew(const std::filesystem::path& destination,
+                             std::span<const uint8_t> bytes) override {
+    return WriteImpl(destination, bytes, true);
+  }
+
+ private:
+  AtomicWriteResult WriteImpl(const std::filesystem::path& destination,
+                              std::span<const uint8_t> bytes, bool new_only) {
     auto transaction = factory_();
     AtomicWriteResult result;
     const auto fail = [&](AtomicWriteError stage, std::error_code error,
@@ -39,8 +49,11 @@ class TransactionalFileWriter final : public AtomicFileWriter {
     if (auto error = transaction->FlushFile()) {
       return fail(AtomicWriteError::kFlushFailed, error, true);
     }
-    if (auto error = transaction->Replace()) {
-      return fail(AtomicWriteError::kReplaceFailed, error, true);
+    if (auto error =
+            new_only ? transaction->PublishNew() : transaction->Replace()) {
+      const bool useful_candidate =
+          !(new_only && error == std::errc::file_exists);
+      return fail(AtomicWriteError::kReplaceFailed, error, useful_candidate);
     }
     result.outcome = AtomicCommitOutcome::kReplacedDurabilityUnknown;
     if (auto error = transaction->FlushCommit()) {
@@ -50,7 +63,6 @@ class TransactionalFileWriter final : public AtomicFileWriter {
     return result;
   }
 
- private:
   AtomicTransactionFactory factory_;
 };
 }  // namespace

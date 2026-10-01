@@ -81,6 +81,14 @@ class WindowsTransaction final : public AtomicFileTransaction {
     temporary_.clear();
     return {};
   }
+  std::error_code PublishNew() override {
+    if (!MoveFileExW(temporary_.c_str(), destination_.c_str(),
+                     MOVEFILE_WRITE_THROUGH)) {
+      return LastError();
+    }
+    temporary_.clear();
+    return {};
+  }
   // MoveFileExW requests write-through for the namespace change. Confirm file
   // buffers once more after replacement; any failure is an uncertain commit.
   std::error_code FlushCommit() override { return FlushFile(); }

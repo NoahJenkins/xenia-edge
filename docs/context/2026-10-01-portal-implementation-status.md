@@ -24,13 +24,15 @@ was performed.
 | Figure parser | Exact 1,024-byte input; identity, BCC, tag/access fields; optional bounded reads; exact block replacement; explicit incomplete-validation warnings | `6fc6bc7d0` |
 | Identifier checksum | Type-0 CRC with independent vectors and single-bit corruption tests | `4dbecf3d6` |
 | Atomic writer | Three commit outcomes, retained complete candidates, native POSIX/Windows adapters; Mac tests pass | `e209b0dda` plus Mac full-flush follow-up |
-| Figure storage | Managed/read-only handles, XXH3 conflict checks, uncertain-save I/O block, explicit durable recovery | Save-correction follow-up |
+| Figure storage | Managed/read-only handles, import/export, XXH3 conflict checks, uncertain-save I/O block, explicit durable recovery | Local continuation |
+| Session state | Versioned TOML; path and fingerprint checks; durable pending saves before figure writes; recovery across restarts | Local continuation |
 | Test wiring | Portal target in default test list and existing Linux CI build job; Python build-path regression in lint job | `113227b58` |
 
 The protocol source is not connected to XAM. Activation acknowledgements do
 not implement unverified activation/status side effects. Status scheduling,
-query/write commands, virtual backend selection, library import/export/UI,
-creation/reset, special objects, and audio remain unimplemented.
+query/write commands, virtual backend selection, library UI,
+creation/reset, special objects, and audio remain unimplemented. Session slot
+restoration is parsed but not connected to a manager.
 
 The four replays are software-reference tests assembled from corroborated
 public behavior. They are not captures and do not prove Xbox title behavior.
@@ -39,9 +41,9 @@ records exact revisions and unresolved source disagreements.
 
 ### Verification
 
-- Native checked portal suite: **35 test cases, 1,111 assertions passed**.
+- Native checked portal suite: **49 test cases, 1,192 assertions passed**.
 - The same core and tests compiled separately with Apple Clang AddressSanitizer
-  and UndefinedBehaviorSanitizer: **35 cases, 1,111 assertions passed**, no
+  and UndefinedBehaviorSanitizer: **49 cases, 1,192 assertions passed**, no
   sanitizer report. This harness uses Catch2 directly and has no emulator
   startup, GPU, or game dependency.
 - Python build-runner test: **passed**, covering CMake output discovery for
@@ -105,6 +107,28 @@ the macOS full-drive flush described below. One durable workflow improvement is 
 tools below the ignored build directory and match CI's formatter version,
 rather than caching disposable `/tmp` executable paths.
 
+### Restart recovery and library continuation
+
+[ADR 0003](../adr/0003-persist-pending-portal-figure-saves.md) records a
+pending save durably in the session manifest before each managed figure write
+or import. A crash cannot silently discard an uncertain figure-save block.
+Another live store also checks the pending state and file version before reads
+and exports. On restart, a pending entry blocks loads until explicit recovery
+validates and durably saves the actual file. The manifest uses relative paths,
+version 1, and figure fingerprints. Its parser skips unsafe, missing, changed,
+and invalid slot entries and reports the errors separately. Manager-driven slot
+restoration and backend selection are still absent.
+
+Import validates raw image size and structure before creating a managed file.
+Export requires overwrite confirmation; a new destination uses atomic
+no-replace publication. All tests use generated synthetic files only.
+
+The extra durable session writes can add latency to every figure block save.
+There is no title timing or power-loss measurement yet. macOS is the only
+native runtime tested for these additions; Windows and Linux adapters need
+native checks. The session root is configurable for future manager use; the
+standalone store defaults it to the library root.
+
 ### Approved save correction
 
 [ADR 0002](../adr/0002-portal-save-commit-outcomes.md) was accepted on
@@ -127,7 +151,9 @@ stale content with unchanged size/timestamp, invalid bounds, failed recovery,
 changed identity, and the candidate identity after uncertain replacement.
 The synthetic files are not claimed playable or fully crypto-valid. Explicit
 managed load preserves all validation warnings; it does not repair encryption
-or gameplay checksums. Import/export and creator/reset are not implemented.
+or gameplay checksums. Raw import and export are implemented. Export
+requires confirmation before replacing an existing destination, and creating a new destination uses an
+atomic no-replace operation. Creator/reset are not implemented.
 
 The atomic writer requires an existing parent directory. It does not silently
 create unsynced ancestors. Linux uses file and directory `fsync`. macOS also
@@ -142,9 +168,8 @@ changes observed before saving, but are not an interprocess compare-and-swap.
 
 ## Open Questions
 
-- Finish library operations and connect the tested storage layer to the
-  manager and session restoration. Handle recovery currently applies within
-  one store instance; restart/restore integration remains unimplemented.
+- Connect the tested storage and session layers to the manager, XAM, and
+  backend-neutral UI. Session slot restoration remains pending.
 - Resolve status timing, XAM empty-poll semantics, legacy profiles, and write
   acknowledgement/failure behavior using further public primary evidence.
 - Establish independent crypto/checksum vectors and catalog provenance.
@@ -155,4 +180,4 @@ changes observed before saving, but are not an interprocess compare-and-swap.
 
 <!-- Related ADR: [ADR 0001](../adr/0001-native-virtual-skylanders-portal.md) -->
 
-<!-- Related ADR: [ADR 0002](../adr/0002-portal-save-commit-outcomes.md) -->
+<!-- Related ADR: [ADR 0003](../adr/0003-persist-pending-portal-figure-saves.md) -->

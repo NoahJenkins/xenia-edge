@@ -10,9 +10,10 @@ Last Updated: 2026-10-01
 - [ ] Establish independent Key A, AES input, and checksum-family 1/2/3/6
       vectors. Correct the plan's UID-only key-derivation signature first.
 - [ ] Establish record-level provenance and blank rules for figure creation.
-- [ ] Finish library import/export/reset, XAM backend selection, and UI.
-- [ ] Connect save errors and recovery to the manager and session restoration;
-      prevent restore or store recreation from bypassing recovery.
+- [ ] Finish creator/reset, XAM backend selection, and UI.
+      Creation remains gated on verified figure format and provenance.
+- [ ] Connect save errors, session restoration, and safe library operations
+      to the manager and XAM.
 - [ ] Install/enable the host Metal Toolchain before full Mac app verification.
       The full checked build currently fails in Metal shader generation.
 - [ ] Recheck the previously recorded Apple Clang `trace_viewer.cc` failure
@@ -24,6 +25,10 @@ Last Updated: 2026-10-01
 - [ ] Complete SteamOS acceptance and the six-game compatibility matrix.
 
 ## Done
+
+- [x] Persist pending saves before figure writes; block I/O across restarts
+      until file validation and durable recovery (ADR 0003).
+- [x] Add safe raw figure import, confirmed export, and partial session restore.
 
 - [x] Accept ADR 0002 save-error correction (user approval, 2026-10-01).
 - [x] Add atomic save outcomes and managed-handle recovery with failure tests.

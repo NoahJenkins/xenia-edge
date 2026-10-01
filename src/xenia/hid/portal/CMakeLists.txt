@@ -5,6 +5,7 @@ add_library(xenia-hid-portal STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/xbox360_portal_protocol.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/figure_image.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/figure_store.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/portal_session_store.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/figure_crypto.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/atomic_file_writer.cc
 )
@@ -22,6 +23,7 @@ else()
   )
 endif()
 xe_target_defaults(xenia-hid-portal)
+target_link_libraries(xenia-hid-portal PUBLIC tomlplusplus)
 
 if(XENIA_BUILD_TESTS)
   add_subdirectory(testing)

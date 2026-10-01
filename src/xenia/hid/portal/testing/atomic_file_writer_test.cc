@@ -154,6 +154,24 @@ TEST_CASE("Atomic writer rejects a missing parent without creating directories",
   REQUIRE(result.system_error);
   REQUIRE_FALSE(std::filesystem::exists(temp.path / "missing"));
 }
+TEST_CASE("Atomic create never replaces an existing destination",
+          "[skylanders][atomic-write]") {
+  TemporaryDirectory temp;
+  const auto destination = temp.path / "figure.sky";
+  auto writer = CreateNativeAtomicFileWriter();
+  REQUIRE(writer->WriteNew(destination, kCandidate).outcome ==
+          AtomicCommitOutcome::kDurable);
+  REQUIRE(Read(destination) == "new");
+  const std::array<uint8_t, 3> other{'b', 'a', 'd'};
+  const auto denied = writer->WriteNew(destination, other);
+  REQUIRE(denied.outcome == AtomicCommitOutcome::kNotReplaced);
+  REQUIRE(denied.error == AtomicWriteError::kReplaceFailed);
+  REQUIRE(denied.system_error == std::errc::file_exists);
+  REQUIRE(Read(destination) == "new");
+  REQUIRE(denied.recovery_path.empty());
+  REQUIRE(std::distance(std::filesystem::directory_iterator(temp.path), {}) ==
+          1);
+}
 TEST_CASE("Native replacement failure retains a complete candidate",
           "[skylanders][atomic-write]") {
   TemporaryDirectory temp;
