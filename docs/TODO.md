@@ -14,10 +14,8 @@ Last Updated: 2026-10-01
       Creation remains gated on verified figure format and provenance.
 - [ ] Connect save errors, session restoration, and safe library operations
       to the manager and XAM.
-- [ ] Install/enable the host Metal Toolchain before full Mac app verification.
-      The full checked build currently fails in Metal shader generation.
-- [ ] Recheck the previously recorded Apple Clang `trace_viewer.cc` failure
-      after the build can reach it; it was not reached in the current run.
+- [ ] Generate PPC test maps before treating the Mac default CPU suite as
+      verified. The runner currently reports zero loaded CPU tests.
 - [ ] Run native Linux CI, Docker parity, Windows tests, and AppImage checks.
       The Linux workflow now includes the portal suite, but has not run for
       this local branch.
@@ -25,6 +23,10 @@ Last Updated: 2026-10-01
 - [ ] Complete SteamOS acceptance and the six-game compatibility matrix.
 
 ## Done
+
+- [x] Install the Apple Metal Toolchain and pass the checked Mac app build.
+- [x] Fix the previously reported `trace_viewer.cc` size-format errors.
+- [x] Pass the Mac base and portal suites; record the CPU load gap.
 
 - [x] Persist pending saves before figure writes; block I/O across restarts
       until file validation and durable recovery (ADR 0003).

@@ -52,12 +52,16 @@ records exact revisions and unresolved source disagreements.
 - Formatting: clang-format **21.1.8**, matching repository CI; changed C++
   files pass the dry-run check. `git diff --check` passed.
 - Workflow YAML parsed locally. No hosted CI result is claimed.
-- Full app/base/CPU checked build: **blocked** at Metal shader generation with
-  `cannot execute tool 'metal' due to missing Metal Toolchain`. The portal
-  library and test target build successfully. `./xb test --no_build` cannot
-  run the default suite because `xenia-base-tests` was not produced.
-- The earlier `trace_viewer.cc` Clang error was not reached in this attempt;
-  it is not claimed fixed or reproduced.
+- Full checked Mac app build: **passed** after installing Apple's Metal
+  Toolchain and correcting 13 `size_t` format specifiers in `trace_viewer.cc`.
+  The toolchain installation changed this Mac's Xcode component state.
+- Default test command exited zero. Its base suite passed **77 cases / 3,688
+  assertions**, and its portal suite passed **49 cases / 1,192 assertions**.
+  The PPC CPU executable loaded **zero tests** because generated `.map` and
+  `.bin` assets are absent. Its log says suites failed to load despite the
+  runner's zero exit status. The CPU suite is **not verified**. `xb gentests`
+  requires a local PowerPC binutils build, which was not done for this portal
+  change.
 - No native Linux/Windows, Docker, AppImage, gameplay, or SteamOS acceptance
   result exists for these commits.
 
@@ -173,8 +177,8 @@ changes observed before saving, but are not an interprocess compare-and-swap.
 - Resolve status timing, XAM empty-poll semantics, legacy profiles, and write
   acknowledgement/failure behavior using further public primary evidence.
 - Establish independent crypto/checksum vectors and catalog provenance.
-- Provide the missing host Metal Toolchain for full Mac checks, then recheck
-  the previously recorded Clang issue if it occurs.
+- Generate PPC test assets if full default-suite coverage is required; the
+  checked Mac app, base suite, and portal suite now build and run.
 - Complete runtime, UI, native platform, and six-game acceptance work before
   describing the portal as usable.
 
