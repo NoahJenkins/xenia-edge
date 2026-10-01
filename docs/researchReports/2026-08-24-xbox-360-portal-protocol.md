@@ -71,6 +71,10 @@ Direction uses `console -> portal` for an Xbox game output report and
 
 ### Replay gate
 
+Update 2026-10-01: [public evidence refresh](2026-10-01-portal-public-evidence.md)
+adds four synthetic software-reference exchanges. The original findings below
+describe the August snapshot; no hardware captures have since been obtained.
+
 No end-to-end Xbox host-report and expected guest-report pair meets the
 confirmed replay standard yet. The checked-in replay table is intentionally
 empty. Correlated prefixes and response classifiers are not a substitute for

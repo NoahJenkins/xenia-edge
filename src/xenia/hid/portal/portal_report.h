@@ -32,6 +32,7 @@ enum class ProtocolError {
   kInvalidBlock,
   kFigureUnavailable,
   kPersistenceFailed,
+  kQueueFull,
 };
 
 }  // namespace xe::hid

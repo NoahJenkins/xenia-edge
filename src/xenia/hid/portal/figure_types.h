@@ -10,6 +10,7 @@
 #ifndef XENIA_HID_PORTAL_FIGURE_TYPES_H_
 #define XENIA_HID_PORTAL_FIGURE_TYPES_H_
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 
@@ -21,6 +22,25 @@ constexpr size_t kFigureBlockCount = kFigureSize / kFigureBlockSize;
 
 using PortalSlot = uint8_t;
 using FigureHandle = uint64_t;
+
+enum class FigureIoError {
+  kNone,
+  kInvalidSlot,
+  kInvalidBlock,
+  kUnavailable,
+  kReadOnly,
+  kConflict,
+  kPersistenceFailed,
+};
+
+struct FigureBlockReadResult {
+  FigureIoError error = FigureIoError::kNone;
+  std::array<uint8_t, kFigureBlockSize> data{};
+};
+
+struct FigureBlockWriteResult {
+  FigureIoError error = FigureIoError::kNone;
+};
 
 }  // namespace xe::hid
 
