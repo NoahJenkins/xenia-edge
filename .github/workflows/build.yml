@@ -18,6 +18,8 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Lint
         run: ./xenia-build.py lint --all
+      - name: Test build paths
+        run: python3 -m unittest discover -s tools/build/tests -p 'test_*.py'
 
   build-linux:
     name: Build Linux
@@ -123,6 +125,14 @@ jobs:
           ./xenia-build.py fetchdata
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.10
+      - name: Test portal core
+        env:
+          CC: clang-21
+          CXX: clang++-21
+          SCCACHE_GHA_ENABLED: "true"
+          CMAKE_C_COMPILER_LAUNCHER: sccache
+          CMAKE_CXX_COMPILER_LAUNCHER: sccache
+        run: ./xenia-build.py test --target xenia-hid-portal-tests --build-tests --config=Release --no_sde
       - name: Build
         env:
           CC: clang-21

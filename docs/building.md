@@ -6,6 +6,26 @@ drivers.
 
 ## Setup
 
+### Portal core tests
+
+After the normal platform setup, build and run the portal suite with:
+
+```sh
+./xb test --target xenia-hid-portal-tests --build-tests --config=checked --no_sde
+```
+
+These tests use synthetic reports and figure bytes. They need no portal,
+game, figure file, or GPU at runtime. They cover only the implemented core;
+passing them does not establish game compatibility. The Linux build workflow
+runs the portal suite with its existing Clang 21 toolchain before building the
+application. The default `./xb test` command also includes this target.
+
+The Python build-runner regression can run without compiling Xenia:
+
+```sh
+python3 -m unittest discover -s tools/build/tests -p 'test_*.py'
+```
+
 ### Windows
 
 * Windows 10 or later
