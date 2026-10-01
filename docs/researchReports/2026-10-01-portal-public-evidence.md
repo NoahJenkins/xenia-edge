@@ -87,6 +87,15 @@ open and unmerged at `f40c7d8718`. The comments include a Giants disconnect
 report and a later request to retest a hardware-specific fix. No packet
 capture was attached in the reviewed discussion.
 
+A further public-source search on 2026-10-01 found no Xbox 360 packet capture
+that resolves these disagreements. SkyReader's Xbox support was explicitly an
+attempt based on a decompiled web driver; its author said the communication
+code was doubtful. Its active figure read/write functions were file stubs, so
+it is not a verified Xbox Q/W exchange. A separate Raspberry Pi portal project
+explicitly excludes Xbox 360. Canary PR 1157 reports a successful physical
+Traptanium test, but gives no raw report sequence or write failure/retry
+transcript. These sources do not change the write or status evidence gate.
+
 ## Recommendations
 
 1. Implement the four synthetic command replays with explicit unsupported
@@ -109,3 +118,5 @@ capture was attached in the reviewed discussion.
 - [Archived original protocol notes](https://gist.github.com/parkerlreed/a19d50deccaedbe15517a19bc70ff2e5)
 
 - [GiantsRecomp protocol notes at reviewed revision](https://github.com/TheBiemGamer/GiantsRecomp/blob/a397a11f98f7f16ec76bfa9b85f379cd69682fdc/docs/portal-protocol.md)
+- [SkyReader original Xbox attempt and file stubs](https://github.com/silicontrip/SkyReader/blob/master/portalio.cpp)
+- [Pico portal project platform scope](https://github.com/AlexanderShaffer/SkylandersPortalEmulator)
