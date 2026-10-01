@@ -21,6 +21,20 @@ wxWidgets, ImGui gamepad dialogs, Linux AppImage, GitHub Actions, and Docker.
 
 **Spec:** `docs/context/2026-08-24-skylanders-virtual-portal-design.md`
 
+## Execution status: 2026-10-01
+
+Tasks 1-6 are recorded as complete for their stated layers. Task 2's research
+is documented; the full protocol evidence gate is still open. Task 5 implements
+only corroborated R/A/M replies and remains disconnected from XAM. Task 7 has
+identifier CRC validation only. Task 17 has default-test and Linux workflow
+wiring only; hosted/platform checks are pending. Other tasks remain pending.
+
+The [current status note](../../context/2026-10-01-portal-implementation-status.md)
+records actual implementation, test results, and rulings. Proposed
+[ADR 0002](../../adr/0002-portal-save-commit-outcomes.md) must be decided before
+persistence implementation. The original Task 7 UID-only key signature is a
+known defect and must not be transcribed into code.
+
 ## Global Constraints
 
 - SteamOS is the primary acceptance platform. The core must compile on Linux,
@@ -280,7 +294,7 @@ class PortalFigureIoAdapter final : public ProtocolFigureIo {
 - Consumes: the user-approved Option A architecture.
 - Produces: the durable specification for all later tasks.
 
-- [ ] **Step 1: Verify files and cross-references**
+- [x] **Step 1: Verify files and cross-references**
 
 ~~~bash
 test -f docs/AGENTS.md
@@ -292,7 +306,7 @@ rg -n "ADR 0001|Related ADR|Spec:" docs
 
 Expected: every file exists and every repository link resolves.
 
-- [ ] **Step 2: Commit only approved documentation**
+- [x] **Step 2: Commit only approved documentation**
 
 ~~~bash
 git add docs/AGENTS.md docs/TODO.md \
@@ -324,13 +338,13 @@ struct ConfirmedProtocolReplay {
 };
 ~~~
 
-- [ ] **Step 1: Record each fact with exact evidence fields**
+- [x] **Step 1: Record each fact with exact evidence fields**
 
 Use one row with Fact, Status, Exact bytes or offset, Direction, Portal
 generation, Source revision, License, Redistribution status, and Verification
 method. Allowed statuses are `Confirmed`, `Observed once`, and `Unknown`.
 
-- [ ] **Step 2: Record the exact repository and reference revisions**
+- [x] **Step 2: Record the exact repository and reference revisions**
 
 ~~~bash
 git rev-parse HEAD
@@ -341,18 +355,18 @@ git show HEAD:LICENSE | sed -n '1,35p'
 Also record the reviewed Canary, Dolphin, and Cemu SHAs. Do not copy reference
 source text, fixtures, tables, or retail figure bytes.
 
-- [ ] **Step 3: Record the independent figure-format rules**
+- [x] **Step 3: Record the independent figure-format rules**
 
 Cover exact length, block layout, identity offsets, tag fields, sector
 trailers, checksum families, encrypted block selection, byte order, and raw
 extensions. Mark whether two independent implementations confirm each rule.
 
-- [ ] **Step 4: Add synthetic replay arrays only for confirmed facts**
+- [x] **Step 4: Add synthetic replay arrays only for confirmed facts**
 
 Each replay has an evidence-reference comment. An unknown behavior remains
 absent from production and test replay tables.
 
-- [ ] **Step 5: Verify replay-to-report traceability**
+- [x] **Step 5: Verify replay-to-report traceability**
 
 ~~~bash
 rg -n "evidence_reference" \
@@ -363,7 +377,7 @@ rg -n "Confirmed" \
 
 Expected: every replay maps to one confirmed evidence row.
 
-- [ ] **Step 6: Commit the evidence gate**
+- [x] **Step 6: Commit the evidence gate**
 
 ~~~bash
 git add docs/researchReports/2026-08-24-xbox-360-portal-protocol.md \
@@ -385,7 +399,7 @@ git commit -m "docs: record Skylanders portal protocol evidence"
 - Produces: `PortalReport`, `QueuedPortalReport`, and `ProtocolError` from the
   file map.
 
-- [ ] **Step 1: Write the failing size test**
+- [x] **Step 1: Write the failing size test**
 
 ~~~cpp
 TEST_CASE("Portal report keeps the Xbox XAM size", "[skylanders][portal]") {
@@ -396,7 +410,7 @@ TEST_CASE("Portal report keeps the Xbox XAM size", "[skylanders][portal]") {
 }
 ~~~
 
-- [ ] **Step 2: Add the test target**
+- [x] **Step 2: Add the test target**
 
 ~~~cmake
 xe_test_suite(xenia-hid-portal-tests ${CMAKE_CURRENT_SOURCE_DIR}
@@ -406,7 +420,7 @@ xe_test_suite(xenia-hid-portal-tests ${CMAKE_CURRENT_SOURCE_DIR}
 
 Add the testing subdirectory only when `XENIA_BUILD_TESTS` is enabled.
 
-- [ ] **Step 3: Verify the test fails before implementation**
+- [x] **Step 3: Verify the test fails before implementation**
 
 ~~~bash
 ./xb test --target xenia-hid-portal-tests --build-tests \
@@ -415,11 +429,11 @@ Add the testing subdirectory only when `XENIA_BUILD_TESTS` is enabled.
 
 Expected: compilation fails because the report types are absent.
 
-- [ ] **Step 4: Add the minimal types and rerun the test**
+- [x] **Step 4: Add the minimal types and rerun the test**
 
 Expected: PASS with a 32-byte static assertion and explicit queued length.
 
-- [ ] **Step 5: Commit the test foundation**
+- [x] **Step 5: Commit the test foundation**
 
 ~~~bash
 git add src/xenia/hid/portal/CMakeLists.txt \
@@ -453,12 +467,12 @@ struct PortalSlotSnapshot {
 };
 ~~~
 
-- [ ] **Step 1: Write failing transition tests**
+- [x] **Step 1: Write failing transition tests**
 
 Test added-to-ready, removing-to-empty, generation changes on replacement,
 occupied move rejection without mutation, and rejection of slot 16.
 
-- [ ] **Step 2: Verify the slot tests fail**
+- [x] **Step 2: Verify the slot tests fail**
 
 ~~~bash
 ./xb test --target xenia-hid-portal-tests --build-tests \
@@ -467,12 +481,12 @@ occupied move rejection without mutation, and rejection of slot 16.
 
 Expected: compilation fails because slot state is absent.
 
-- [ ] **Step 3: Implement a fixed-array state machine**
+- [x] **Step 3: Implement a fixed-array state machine**
 
 Use no time, path, metadata, protocol packet, or UI type. Every successful
 insert, replace, move, or final removal changes the affected generation.
 
-- [ ] **Step 4: Run focused and full portal tests**
+- [x] **Step 4: Run focused and full portal tests**
 
 ~~~bash
 ./xb test --target xenia-hid-portal-tests --build-tests \
@@ -483,7 +497,7 @@ insert, replace, move, or final removal changes the affected generation.
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit slot state**
+- [x] **Step 5: Commit slot state**
 
 ~~~bash
 git add src/xenia/hid/portal/CMakeLists.txt \
@@ -519,12 +533,12 @@ class ProtocolFigureIo {
 };
 ~~~
 
-- [ ] **Step 1: Write a fake figure service and injected clock**
+- [x] **Step 1: Write a fake figure service and injected clock**
 
 The fake clock always returns 100 ticks until the test changes it. The fake
 figure service records each read or write without opening a file.
 
-- [ ] **Step 2: Write failing replay and robustness tests**
+- [x] **Step 2: Write failing replay and robustness tests**
 
 ~~~cpp
 TEST_CASE("Confirmed portal reports replay byte for byte",
@@ -537,7 +551,7 @@ TEST_CASE("Reset clears reports but preserves loaded figures",
           "[skylanders][protocol]");
 ~~~
 
-- [ ] **Step 3: Verify the protocol tests fail**
+- [x] **Step 3: Verify the protocol tests fail**
 
 ~~~bash
 ./xb test --target xenia-hid-portal-tests --build-tests \
@@ -546,13 +560,13 @@ TEST_CASE("Reset clears reports but preserves loaded figures",
 
 Expected: compilation fails because the protocol types are absent.
 
-- [ ] **Step 4: Implement only confirmed commands**
+- [x] **Step 4: Implement only confirmed commands**
 
 Use a dispatch table keyed by confirmed command and portal generation. Check
 length before every field access. Queue fixed reports with explicit lengths.
 Return `kUnsupportedCommand` for behavior without a confirmed evidence row.
 
-- [ ] **Step 5: Run each replay twice**
+- [x] **Step 5: Run each replay twice**
 
 ~~~bash
 ./xb test --target xenia-hid-portal-tests --build-tests \
@@ -563,7 +577,7 @@ Return `kUnsupportedCommand` for behavior without a confirmed evidence row.
 
 Expected: both runs PASS with identical output.
 
-- [ ] **Step 6: Commit the protocol foundation**
+- [x] **Step 6: Commit the protocol foundation**
 
 ~~~bash
 git add src/xenia/hid/portal/CMakeLists.txt \
@@ -606,7 +620,7 @@ struct FigureValidationReport {
 };
 ~~~
 
-- [ ] **Step 1: Add a synthetic fixture generator**
+- [x] **Step 1: Add a synthetic fixture generator**
 
 ~~~cpp
 std::array<uint8_t, kFigureSize> MakeSyntheticFigureBytes(
@@ -617,13 +631,13 @@ std::array<uint8_t, kFigureSize> MakeSyntheticFigureBytes(
 The generator follows documented rules and contains no retail dump bytes or
 copied GPL/MPL fixture data.
 
-- [ ] **Step 2: Write failing parser tests**
+- [x] **Step 2: Write failing parser tests**
 
 Test exact 1,024-byte size, little-endian identity, invalid BCC, invalid sector
 trailers, rejection of block 64, unchanged source bytes after failure, and a
 byte-exact serialization round trip.
 
-- [ ] **Step 3: Verify parser tests fail**
+- [x] **Step 3: Verify parser tests fail**
 
 ~~~bash
 ./xb test --target xenia-hid-portal-tests --build-tests \
@@ -632,13 +646,13 @@ byte-exact serialization round trip.
 
 Expected: compilation fails because `FigureImage` is absent.
 
-- [ ] **Step 4: Implement structural parsing**
+- [x] **Step 4: Implement structural parsing**
 
 Require exact size and copy into `std::array<uint8_t, 1024>`. Use explicit
 little-endian helpers. Do not modify bytes during parsing. Do not report crypto
 or checksum validity until Task 7 implements those checks.
 
-- [ ] **Step 5: Run tests and commit**
+- [x] **Step 5: Run tests and commit**
 
 ~~~bash
 ./xb test --target xenia-hid-portal-tests --build-tests \

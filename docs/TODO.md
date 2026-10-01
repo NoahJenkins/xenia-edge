@@ -1,26 +1,39 @@
 # Docs TODO
 
-Last Updated: 2026-08-24
+Last Updated: 2026-10-01
 
 ## Open
 
-- [ ] Capture redistributable, end-to-end Xbox 360 portal report pairs before
-      implementing protocol commands.
-- [ ] Establish independent vectors and redistribution provenance for figure
-      Key A, AES compatibility input, and checksum families 1, 2, 3, and 6.
-- [ ] Establish record-level provenance for the first figure-creation catalog.
-- [ ] Resolve or explicitly waive the existing Apple Clang checked-build
-      failure in `src/xenia/gpu/trace_viewer.cc` before full Mac acceptance.
-- [ ] Add the implemented virtual-portal runtime flow to `docs/architecture/`
-      after Xenia integration is complete.
-- [ ] Publish the evidence-backed six-game compatibility matrix after SteamOS
-      acceptance testing.
+- [ ] Resolve remaining Xbox status/poll timing and legacy portal evidence.
+      Four software-reference R/A/M replays exist; no hardware captures exist.
+- [ ] Verify query/write failure and retry behavior before enabling figure I/O.
+- [ ] Establish independent Key A, AES input, and checksum-family 1/2/3/6
+      vectors. Correct the plan's UID-only key-derivation signature first.
+- [ ] Establish record-level provenance and blank rules for figure creation.
+- [ ] Decide proposed ADR 0002 before implementing atomic save-error behavior.
+- [ ] Implement persistence, library management, XAM backend selection, and UI.
+- [ ] Install/enable the host Metal Toolchain before full Mac app verification.
+      The full checked build currently fails in Metal shader generation.
+- [ ] Recheck the previously recorded Apple Clang `trace_viewer.cc` failure
+      after the build can reach it; it was not reached in the current run.
+- [ ] Run native Linux CI, Docker parity, Windows tests, and AppImage checks.
+      The Linux workflow now includes the portal suite, but has not run for
+      this local branch.
+- [ ] Add the runtime architecture document after Xenia integration exists.
+- [ ] Complete SteamOS acceptance and the six-game compatibility matrix.
 
 ## Done
 
-- [x] Enabled the repository docs workflow.
-- [x] Recorded the accepted native virtual-portal architecture in ADR 0001.
-- [x] Saved the approved virtual-portal design and current evidence boundaries.
-- [x] Recorded the protocol, figure-format, and license evidence gate.
-- [x] Added an intentionally empty confirmed replay table until exact Xbox
-      request and response pairs have redistributable evidence.
+- [x] Enabled the repository docs workflow and accepted ADR 0001.
+- [x] Saved the approved design and implementation plan.
+- [x] Recorded original protocol, figure-format, and license evidence.
+- [x] Refreshed public evidence and added four synthetic software-reference
+      replays with exact source revisions and explicit limits.
+- [x] Added the portable portal test target and fixed the Mac test-runner path.
+- [x] Implemented deterministic slots and the limited R/A/M reply core.
+- [x] Implemented exact-size raw figure parsing and structural checks.
+- [x] Added independently verified identifier CRC checks and corruption tests.
+- [x] Added the portal target to default tests and the native Linux build job.
+
+See [current implementation and verification](context/2026-10-01-portal-implementation-status.md)
+for exact scope, checks, design rulings, and remaining blockers.

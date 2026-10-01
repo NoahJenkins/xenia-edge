@@ -56,6 +56,11 @@ test inputs and expected bytes, not captured traffic.
 
 ### Evidence still missing
 
+The GiantsRecomp protocol document was also inspected at
+`a397a11f98f7f16ec76bfa9b85f379cd69682fdc`. It says `W` sends no reply, whereas
+the current portal library queues a `57` acknowledgement. This disagreement
+prevents treating that document as a complete write replay reference.
+
 - The new software portal keeps added status for eight reports. Cemu advances
   queued transitions per status read. Neither establishes a common Xbox timing
   rule; timing remains unconfirmed.
@@ -98,3 +103,5 @@ capture was attached in the reviewed discussion.
 - [Cemu command implementation](https://github.com/cemu-project/Cemu/blob/5ead58008dd984f614e2cb38bd9cb69bd77fd1bb/src/Cafe/OS/libs/nsyshid/Skylander.cpp)
 - [Canary PR 1157](https://github.com/xenia-canary/xenia-canary/pull/1157)
 - [Archived original protocol notes](https://gist.github.com/parkerlreed/a19d50deccaedbe15517a19bc70ff2e5)
+
+- [GiantsRecomp protocol notes at reviewed revision](https://github.com/TheBiemGamer/GiantsRecomp/blob/a397a11f98f7f16ec76bfa9b85f379cd69682fdc/docs/portal-protocol.md)
