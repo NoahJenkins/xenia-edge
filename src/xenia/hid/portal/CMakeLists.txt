@@ -4,6 +4,7 @@ add_library(xenia-hid-portal STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/portal_slot_state.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/xbox360_portal_protocol.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/figure_image.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/figure_store.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/figure_crypto.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/atomic_file_writer.cc
 )

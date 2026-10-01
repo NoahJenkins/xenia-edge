@@ -28,6 +28,19 @@ std::error_code Sync(int fd) {
   } while (result == -1 && errno == EINTR);
   return result == -1 ? LastError() : std::error_code{};
 }
+std::error_code SyncFile(int fd) {
+#ifdef __APPLE__
+  // fsync alone need not flush the drive cache on macOS. Do not silently
+  // downgrade a failed full flush to an ordinary fsync.
+  int result;
+  do {
+    result = fcntl(fd, F_FULLFSYNC);
+  } while (result == -1 && errno == EINTR);
+  return result == -1 ? LastError() : std::error_code{};
+#else
+  return Sync(fd);
+#endif
+}
 class PosixTransaction final : public AtomicFileTransaction {
  public:
   ~PosixTransaction() override {
@@ -83,7 +96,7 @@ class PosixTransaction final : public AtomicFileTransaction {
     }
     return {};
   }
-  std::error_code FlushFile() override { return Sync(file_); }
+  std::error_code FlushFile() override { return SyncFile(file_); }
   std::error_code Replace() override {
     if (rename(temporary_.c_str(), destination_.c_str()) == -1) {
       return LastError();
@@ -91,7 +104,17 @@ class PosixTransaction final : public AtomicFileTransaction {
     temporary_.clear();
     return {};
   }
-  std::error_code FlushCommit() override { return Sync(directory_); }
+  std::error_code FlushCommit() override {
+    if (auto error = Sync(directory_)) {
+      return error;
+    }
+#ifdef __APPLE__
+    // Flush the drive again after the directory metadata reaches the device.
+    return SyncFile(file_);
+#else
+    return {};
+#endif
+  }
   std::filesystem::path RetainTemporary() override {
     retained_ = true;
     return temporary_;

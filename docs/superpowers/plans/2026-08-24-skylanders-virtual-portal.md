@@ -27,12 +27,14 @@ Tasks 1-6 are recorded as complete for their stated layers. Task 2's research
 is documented; the full protocol evidence gate is still open. Task 5 implements
 only corroborated R/A/M replies and remains disconnected from XAM. Task 7 has
 identifier CRC validation only. Task 17 has default-test and Linux workflow
-wiring only; hosted/platform checks are pending. Other tasks remain pending.
+wiring only; hosted/platform checks are pending. Task 9 has native atomic
+writers and passing Mac tests. Task 10 has managed/read-only handles, conflict
+checks, durable writes, and recovery; import/export/reset remain pending.
 
 The [current status note](../../context/2026-10-01-portal-implementation-status.md)
-records actual implementation, test results, and rulings. Proposed
-[ADR 0002](../../adr/0002-portal-save-commit-outcomes.md) must be decided before
-persistence implementation. The original Task 7 UID-only key signature is a
+records actual implementation, test results, and rulings. Accepted
+[ADR 0002](../../adr/0002-portal-save-commit-outcomes.md) governs save outcomes
+and recovery. The original Task 7 UID-only key signature is a
 known defect and must not be transcribed into code.
 
 ## Global Constraints
@@ -850,6 +852,7 @@ Expected: all focused tests PASS before the local commit.
 
 **Files:**
 - Create: `src/xenia/hid/portal/atomic_file_writer.h`
+- Create: `src/xenia/hid/portal/atomic_file_writer.cc`
 - Create: `src/xenia/hid/portal/atomic_file_writer_posix.cc`
 - Create: `src/xenia/hid/portal/atomic_file_writer_win.cc`
 - Create: `src/xenia/hid/portal/testing/atomic_file_writer_test.cc`
@@ -862,22 +865,26 @@ Expected: all focused tests PASS before the local commit.
 ~~~cpp
 enum class AtomicWriteError {
   kNone,
-  kCreateDirectoryFailed,
   kCreateTemporaryFailed,
   kWriteFailed,
   kFlushFailed,
   kReplaceFailed,
-  kDirectoryFlushFailed,
+  kCommitFlushFailed,
+};
+
+enum class AtomicCommitOutcome {
+  kNotReplaced, kDurable, kReplacedDurabilityUnknown
 };
 
 struct AtomicWriteResult {
+  AtomicCommitOutcome outcome = AtomicCommitOutcome::kNotReplaced;
   AtomicWriteError error = AtomicWriteError::kNone;
   std::filesystem::path recovery_path;
   std::error_code system_error;
 };
 ~~~
 
-- [ ] **Step 1: Write failing filesystem tests**
+- [x] **Step 1: Write failing filesystem tests**
 
 Test spaces and non-ASCII paths, replacement, read-only destination directory,
 forced write failure, and preservation of old bytes before replacement.
@@ -886,7 +893,7 @@ ReplacedDurabilityUnknown; assert the new disk bytes after a final flush error. 
 unique directory below the host temporary directory and delete only that exact
 validated test directory.
 
-- [ ] **Step 2: Verify atomic tests fail**
+- [x] **Step 2: Verify atomic tests fail**
 
 ~~~bash
 ./xb test --target xenia-hid-portal-tests --build-tests \
@@ -895,18 +902,20 @@ validated test directory.
 
 Expected: compilation fails because the writer is absent.
 
-- [ ] **Step 3: Implement POSIX replacement**
+- [x] **Step 3: Implement POSIX replacement**
 
-Use exclusive same-directory temporary creation, complete write, file `fsync`,
-rename replacement, and parent-directory `fsync`. Retain a recovery file only
+Require an existing parent directory. Use exclusive same-directory temporary
+creation, complete write, file `fsync`, rename replacement, and parent-directory
+`fsync`. On macOS, require `F_FULLFSYNC` before replacement and after the
+parent-directory flush; do not downgrade failures. Retain a recovery file only
 when it contains a complete candidate.
 
-- [ ] **Step 4: Implement Windows replacement**
+- [x] **Step 4: Implement Windows replacement**
 
 Use wide paths, exclusive temporary creation, `FlushFileBuffers`, then
 `ReplaceFileW` or `MoveFileExW` with replacement and write-through behavior.
 
-- [ ] **Step 5: Run focused tests and commit**
+- [x] **Step 5: Run focused tests and commit**
 
 ~~~bash
 ./xb test --target xenia-hid-portal-tests --build-tests \

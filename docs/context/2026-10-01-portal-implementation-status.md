@@ -23,11 +23,13 @@ was performed.
 | Protocol foundation | Four synthetic R/A/M exchanges; 32-byte replies; length checks; ordered bounded queue; reset; explicit unsupported errors | `0dc1ce165` |
 | Figure parser | Exact 1,024-byte input; identity, BCC, tag/access fields; optional bounded reads; exact block replacement; explicit incomplete-validation warnings | `6fc6bc7d0` |
 | Identifier checksum | Type-0 CRC with independent vectors and single-bit corruption tests | `4dbecf3d6` |
+| Atomic writer | Three commit outcomes, retained complete candidates, native POSIX/Windows adapters; Mac tests pass | `e209b0dda` plus Mac full-flush follow-up |
+| Figure storage | Managed/read-only handles, XXH3 conflict checks, uncertain-save I/O block, explicit durable recovery | Save-correction follow-up |
 | Test wiring | Portal target in default test list and existing Linux CI build job; Python build-path regression in lint job | `113227b58` |
 
 The protocol source is not connected to XAM. Activation acknowledgements do
 not implement unverified activation/status side effects. Status scheduling,
-query/write commands, virtual backend selection, persistence, library UI,
+query/write commands, virtual backend selection, library import/export/UI,
 creation/reset, special objects, and audio remain unimplemented.
 
 The four replays are software-reference tests assembled from corroborated
@@ -37,9 +39,9 @@ records exact revisions and unresolved source disagreements.
 
 ### Verification
 
-- Native checked portal suite: **23 test cases, 991 assertions passed**.
+- Native checked portal suite: **35 test cases, 1,111 assertions passed**.
 - The same core and tests compiled separately with Apple Clang AddressSanitizer
-  and UndefinedBehaviorSanitizer: **23 cases, 991 assertions passed**, no
+  and UndefinedBehaviorSanitizer: **35 cases, 1,111 assertions passed**, no
   sanitizer report. This harness uses Catch2 directly and has no emulator
   startup, GPU, or game dependency.
 - Python build-runner test: **passed**, covering CMake output discovery for
@@ -97,16 +99,52 @@ not ready for merge or release.
    pending, so Linux build compatibility is not yet proven.
 
 Review did not treat game compatibility, full crypto validity, physical
-hardware regressions, or durable storage as passed. Those paths are absent or
-unverified, and remain explicit acceptance gates. No source fix was required
-by the core review. One durable workflow improvement is to keep local build
+hardware regressions, cross-platform durable storage, or power-loss testing
+as passed. Those paths remain explicit acceptance gates. Storage review added
+the macOS full-drive flush described below. One durable workflow improvement is to keep local build
 tools below the ignored build directory and match CI's formatter version,
 rather than caching disposable `/tmp` executable paths.
 
+### Approved save correction
+
+[ADR 0002](../adr/0002-portal-save-commit-outcomes.md) was accepted on
+2026-10-01. The writer reports `NotReplaced`, `Durable`, or
+`ReplacedDurabilityUnknown`, plus the failed stage, system error, and retained
+candidate path. Only a complete temporary candidate can be retained.
+
+The store keeps old memory only before replacement. After an uncertain
+replacement, it keeps the candidate and blocks all I/O on that handle. Managed
+and read-only loads cannot bypass this block in the same store. Recovery
+reopens and structurally validates the actual file, compares UID/character/
+variant identity, and durably saves those actual bytes. A failed recovery
+leaves the handle blocked. Successful recovery issues a new handle; the old
+handle stays disabled. No guest acknowledgement path is connected yet.
+
+Tests use private synthetic files only. They cover actual replacement followed
+by injected flush failure, each earlier failure stage, incomplete temporary
+cleanup, retained complete candidates, Unicode paths, read-only directories,
+stale content with unchanged size/timestamp, invalid bounds, failed recovery,
+changed identity, and the candidate identity after uncertain replacement.
+The synthetic files are not claimed playable or fully crypto-valid. Explicit
+managed load preserves all validation warnings; it does not repair encryption
+or gameplay checksums. Import/export and creator/reset are not implemented.
+
+The atomic writer requires an existing parent directory. It does not silently
+create unsynced ancestors. Linux uses file and directory `fsync`. macOS also
+requires `F_FULLFSYNC`, because [Apple documents that ordinary fsync need not
+flush a drive cache](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/fsync.2.html).
+Windows uses wide paths, exclusive creation, file flush, replacement with
+[MoveFileExW write-through](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-movefileexw),
+and a final [FlushFileBuffers](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-flushfilebuffers).
+Windows code is not natively tested here. No platform result proves power-loss
+behavior. Concurrent external writers are unsupported; version checks detect
+changes observed before saving, but are not an interprocess compare-and-swap.
+
 ## Open Questions
 
-- ADR 0002 was accepted by the user on 2026-10-01. Implement its explicit
-  commit outcomes and block figure I/O after an uncertain save.
+- Finish library operations and connect the tested storage layer to the
+  manager and session restoration. Handle recovery currently applies within
+  one store instance; restart/restore integration remains unimplemented.
 - Resolve status timing, XAM empty-poll semantics, legacy profiles, and write
   acknowledgement/failure behavior using further public primary evidence.
 - Establish independent crypto/checksum vectors and catalog provenance.
@@ -116,3 +154,5 @@ rather than caching disposable `/tmp` executable paths.
   describing the portal as usable.
 
 <!-- Related ADR: [ADR 0001](../adr/0001-native-virtual-skylanders-portal.md) -->
+
+<!-- Related ADR: [ADR 0002](../adr/0002-portal-save-commit-outcomes.md) -->
