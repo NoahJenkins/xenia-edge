@@ -108,7 +108,7 @@ PortalSessionStore::PortalSessionStore(std::filesystem::path library_root,
                                          : std::move(session_root)),
       writer_(std::move(writer)) {}
 bool PortalSessionStore::SafeRelativePath(const std::filesystem::path& path) {
-  if (path.empty() || path.is_absolute() || path.has_root_name()) {
+  if (path.empty() || path.has_root_path()) {
     return false;
   }
   for (const auto& part : path) {

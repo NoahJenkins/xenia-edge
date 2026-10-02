@@ -410,8 +410,10 @@ TEST_CASE("Export requires confirmation before replacing a file",
   }
   REQUIRE(store.Export(*loaded.handle, destination, false).error ==
           FigureStoreError::kOverwriteNotConfirmed);
-  std::ifstream before(destination);
-  REQUIRE(std::string(std::istreambuf_iterator<char>(before), {}) == "old");
+  {
+    std::ifstream before(destination);
+    REQUIRE(std::string(std::istreambuf_iterator<char>(before), {}) == "old");
+  }
   REQUIRE(store.Export(*loaded.handle, destination, true).error ==
           FigureStoreError::kNone);
   REQUIRE(std::filesystem::file_size(destination) == kFigureSize);

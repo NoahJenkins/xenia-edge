@@ -130,6 +130,15 @@ TEST_CASE("Session manifest rejects unsafe paths and invalid pending metadata",
   session.entries.push_back({0, "/absolute.sky", 1});
   REQUIRE_FALSE(store.Save(session).success());
   REQUIRE_FALSE(std::filesystem::exists(store.manifest_path()));
+#ifdef _WIN32
+  for (const auto* path :
+       {R"(\rooted.sky)", R"(C:drive-relative.sky)", R"(C:\absolute.sky)",
+        R"(\\server\share\figure.sky)"}) {
+    session.entries[0].relative_path = path;
+    REQUIRE_FALSE(store.Save(session).success());
+    REQUIRE_FALSE(std::filesystem::exists(store.manifest_path()));
+  }
+#endif
   {
     std::ofstream file(store.manifest_path());
     file << "version = 1\npending_saves = [{path='../escape',old_header='"

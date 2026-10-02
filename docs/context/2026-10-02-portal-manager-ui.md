@@ -54,6 +54,10 @@ creating a new handle. An arbitrary missing file is still an error.
   produced 1,024 bytes equal to the source. Escape restored the game list
   and its search focus. The macOS save panel also showed its native replace
   warning before the manager confirmation.
+- The native Move flow selected empty slot 2, reported completion, and
+  persisted the new slot. Native Import opened the source picker, used the
+  naming screen, reported completion, and added a managed file with the
+  same 1,024 bytes as the source. The test app exited after these checks.
 - The UI check found skipped child controls and hidden action buttons. The
   dialog now shares the child focus path and keeps actions outside scrolling
   details. Focus returns to the selected slot after an operation.
@@ -71,6 +75,15 @@ creating a new handle. An arbitrary missing file is still an error.
   cache output errors. Release tests now retain `/Z7`; other configurations
   retain `/Zi` to prevent Edit-and-Continue from changing Catch2 line numbers.
   Native Windows test execution remains pending the corrected run.
+- Corrected run [37051484200](https://github.com/NoahJenkins/xenia-edge/actions/runs/37051484200)
+  compiled and ran the Windows portal suite. Two assertions failed: the
+  export test kept a destination reader open, blocking Windows replacement,
+  and the session path validator accepted a root-directory-only path.
+  The test now closes its reader before export. The validator rejects all
+  root paths, including paths without a Windows drive name. Windows cases
+  also check backslash-rooted, drive-relative, drive-absolute, and UNC paths.
+  Linux portal tests passed; full build results and the final corrected
+  Windows suite remain pending.
 
 Review was performed by the author without a separate agent. No accepted ADR
 was changed. The UI exposes the operations already covered by the approved
@@ -81,7 +94,7 @@ UI acceptance. This is recorded here, not added as a global instruction.
 ## Open Questions
 
 - Run the full picker/confirmation and controller/touch matrix at 1280x800,
-  including move, replacement, pending recovery, and shutdown while a picker
+  including replacement, pending recovery, and shutdown while a picker
   is open. Repeat on SteamOS Gaming Mode and native Windows.
 - Verify hosted results for the UI head, Docker parity, and actual AppImage
   execution. Native Windows storage tests must pass before a durability claim.
