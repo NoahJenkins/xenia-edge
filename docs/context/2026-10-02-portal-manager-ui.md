@@ -50,7 +50,10 @@ creating a new handle. An arbitrary missing file is still an error.
   synthetic structural files. Tools opened the dialog without a game.
   Arrow keys and Enter selected a figure; Tab reached Add; Add populated
   slot 1 and showed completion. The manifest recorded the filename and
-  fingerprint. Escape restored the game list and its search focus.
+  fingerprint. A restart restored slot 1. Export required confirmation and
+  produced 1,024 bytes equal to the source. Escape restored the game list
+  and its search focus. The macOS save panel also showed its native replace
+  warning before the manager confirmation.
 - The UI check found skipped child controls and hidden action buttons. The
   dialog now shares the child focus path and keeps actions outside scrolling
   details. Focus returns to the selected slot after an operation.
@@ -59,11 +62,15 @@ creating a new handle. An arbitrary missing file is still an error.
   and the complete native picker/confirmation matrix remain unverified.
 - Hosted run [37046851191](https://github.com/NoahJenkins/xenia-edge/actions/runs/37046851191)
   tests the pre-UI head `09f6e71f1`. Linux portal tests, the full Linux build,
-  artifact packaging, lint, and macOS ARM64 build passed. Windows and Mac
-  x86_64 were still running when this note was written. This does not verify
-  the new UI head or an AppImage launch.
+  artifact packaging, lint, both Mac builds, and the Windows app build
+  passed. This does not verify the new UI head or an AppImage launch.
 - The existing Windows job now runs the portal suite before its full build.
-  Its first native test result remains pending.
+  UI run [37050335849](https://github.com/NoahJenkins/xenia-edge/actions/runs/37050335849)
+  passed Linux portal tests, but Windows test compilation failed. The test
+  helper forced `/Zi` over Release `/Z7`, causing shared compiler PDB and
+  cache output errors. Release tests now retain `/Z7`; other configurations
+  retain `/Zi` to prevent Edit-and-Continue from changing Catch2 line numbers.
+  Native Windows test execution remains pending the corrected run.
 
 Review was performed by the author without a separate agent. No accepted ADR
 was changed. The UI exposes the operations already covered by the approved

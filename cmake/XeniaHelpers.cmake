@@ -507,6 +507,8 @@ function(xe_test_suite name base_path)
 
   if(MSVC)
     # Edit-and-Continue rewrites __LINE__ and breaks Catch2 test discovery.
-    target_compile_options(${name} PRIVATE /Zi)
+    # Release already uses /Z7, which also avoids Edit-and-Continue and keeps
+    # parallel cached compilations from sharing a compiler PDB.
+    target_compile_options(${name} PRIVATE $<$<NOT:$<CONFIG:Release>>:/Zi>)
   endif()
 endfunction()
