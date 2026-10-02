@@ -84,6 +84,11 @@ creating a new handle. An arbitrary missing file is still an error.
   also check backslash-rooted, drive-relative, drive-absolute, and UNC paths.
   Linux portal tests passed; full build results and the final corrected
   Windows suite remain pending.
+- Final source run
+  [37052537662](https://github.com/NoahJenkins/xenia-edge/actions/runs/37052537662)
+  passed Linux and Windows portal tests. Full builds remain in progress.
+  Windows artifact copying now excludes test executables and their symbols;
+  the new test step leaves them next to the app executable in the build tree.
 
 Review was performed by the author without a separate agent. No accepted ADR
 was changed. The UI exposes the operations already covered by the approved

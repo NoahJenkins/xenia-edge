@@ -522,8 +522,8 @@ jobs:
           }
           robocopy . build\bin\Windows\Release LICENSE /r:0 /w:0
           # Copy all files and directories next to the binary, excluding
-          # build intermediates.
-          robocopy build\bin\Windows\Release artifacts\xenia_edge /MIR /r:0 /w:0 /XF *.lib *.idb *.exp
+          # build intermediates and test executables/debug symbols.
+          robocopy build\bin\Windows\Release artifacts\xenia_edge /MIR /r:0 /w:0 /XF *.lib *.idb *.exp xenia-*-tests.*
           If ($LastExitCode -le 7) { echo "LastExitCode = $LastExitCode";$LastExitCode = 0 }
       - name: Upload xenia edge artifacts
         if: steps.prepare_artifacts.outcome == 'success'
