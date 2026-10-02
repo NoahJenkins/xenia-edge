@@ -16,17 +16,23 @@ Last Updated: 2026-10-02
       exposes local store errors, but virtual guest traffic stays closed.
 - [ ] Generate PPC test maps before treating the Mac default CPU suite as
       verified. The runner currently reports zero loaded CPU tests.
-- [ ] Run native Linux CI, Docker parity, Windows tests, and AppImage checks.
-      The pre-UI head passed Linux tests, build, and artifact packaging.
-      The UI head still needs hosted results; the Windows job now runs the
-      portal suite. Docker parity and actual AppImage launch remain open.
+- [ ] Run Docker parity and actual AppImage launch checks.
+- [ ] Finish native picker, recovery, shutdown, controller, and touch checks
+      at 1280x800 on Windows and SteamOS. Mac keyboard Add, Move, Import,
+      Export, restore, and Escape checks passed with synthetic files.
 - [ ] Complete SteamOS acceptance and the six-game compatibility matrix.
 
 ## Done
 
 - [x] Add the figure manager to Tools and the in-game context menu.
 - [x] Add library search, filters, validation/recovery state, and safe actions.
-- [x] Pass checked Mac UI build, 61 portal tests, and native keyboard Add.
+- [x] Pass checked Mac UI build and 61 portal tests; verify native keyboard
+      Add, Move, Import, Export, restore, and Escape with synthetic files.
+- [x] Pass all four hosted app builds and artifact packaging for the UI source
+      head. Pass Linux 61 cases / 1,306 assertions and Windows 60 cases /
+      1,309 assertions. Correct Windows compiler flags and rooted paths.
+- [x] Verify all hosted builds for packaging head `2f931a2a8`; download the
+      Windows archive and confirm it excludes test executables and symbols.
 
 - [x] Add explicit portal backend settings and manager delegation to XAM.
 - [x] Restore safe virtual slots and persist local management operations.

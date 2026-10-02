@@ -74,7 +74,7 @@ creating a new handle. An arbitrary missing file is still an error.
   helper forced `/Zi` over Release `/Z7`, causing shared compiler PDB and
   cache output errors. Release tests now retain `/Z7`; other configurations
   retain `/Zi` to prevent Edit-and-Continue from changing Catch2 line numbers.
-  Native Windows test execution remains pending the corrected run.
+  This correction allowed the next Windows run to execute tests.
 - Corrected run [37051484200](https://github.com/NoahJenkins/xenia-edge/actions/runs/37051484200)
   compiled and ran the Windows portal suite. Two assertions failed: the
   export test kept a destination reader open, blocking Windows replacement,
@@ -82,13 +82,23 @@ creating a new handle. An arbitrary missing file is still an error.
   The test now closes its reader before export. The validator rejects all
   root paths, including paths without a Windows drive name. Windows cases
   also check backslash-rooted, drive-relative, drive-absolute, and UNC paths.
-  Linux portal tests passed; full build results and the final corrected
-  Windows suite remain pending.
+  Linux portal tests passed. This run was superseded by the storage correction.
 - Final source run
   [37052537662](https://github.com/NoahJenkins/xenia-edge/actions/runs/37052537662)
-  passed Linux and Windows portal tests. Full builds remain in progress.
+  passed all four hosted app builds, lint, and artifact packaging. Linux
+  portal tests passed **61 cases / 1,306 assertions**; Windows portal tests
+  passed **60 cases / 1,309 assertions**. The Windows suite excludes the
+  POSIX-only parent-permission test and adds Windows rooted-path cases.
   Windows artifact copying now excludes test executables and their symbols;
   the new test step leaves them next to the app executable in the build tree.
+  Packaging run
+  [37053821049](https://github.com/NoahJenkins/xenia-edge/actions/runs/37053821049)
+  passed all four app builds, lint, portal tests, and artifact packaging at
+  head `2f931a2a8`. The downloaded Windows archive contains the app and no
+  `xenia-*-tests.*` executables or symbols. Its size is 61,793,084 bytes.
+  Release creation was skipped by the existing repository/branch guard.
+  These results verify source and packaging; Docker parity, AppImage startup,
+  native Windows UI, and SteamOS acceptance remain open.
 
 Review was performed by the author without a separate agent. No accepted ADR
 was changed. The UI exposes the operations already covered by the approved
@@ -101,8 +111,8 @@ UI acceptance. This is recorded here, not added as a global instruction.
 - Run the full picker/confirmation and controller/touch matrix at 1280x800,
   including replacement, pending recovery, and shutdown while a picker
   is open. Repeat on SteamOS Gaming Mode and native Windows.
-- Verify hosted results for the UI head, Docker parity, and actual AppImage
-  execution. Native Windows storage tests must pass before a durability claim.
+- Verify Docker parity and actual AppImage execution. Native storage tests
+  and the Windows artifact check passed.
 - Resolve Xbox write replies, status timing, and XAM empty polls using public
   primary evidence. No virtual guest packets were added in this continuation.
 - Establish independent crypto/checksum vectors and catalog provenance before
