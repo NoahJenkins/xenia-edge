@@ -72,6 +72,8 @@ class FilePicker {
   void set_multi_selection(bool multi_selection) {
     multi_selection_ = multi_selection;
   }
+  void set_overwrite_prompt(bool enabled) { overwrite_prompt_ = enabled; }
+  bool overwrite_prompt() const { return overwrite_prompt_; }
 
   std::vector<std::filesystem::path> selected_files() const {
     return selected_files_;
@@ -97,6 +99,7 @@ class FilePicker {
   std::string file_name_;
   std::vector<std::pair<std::string, std::string>> extensions_;
   bool multi_selection_;
+  bool overwrite_prompt_ = true;
   std::filesystem::path initial_directory_;
 
   std::vector<std::filesystem::path> selected_files_;

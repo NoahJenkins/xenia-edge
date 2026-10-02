@@ -21,3 +21,8 @@ DEFINE_string(portal_backend, XE_DEFAULT_PORTAL_BACKEND,
 DEFINE_path(skylanders_figure_library, std::filesystem::path{},
             "Managed figure library. Empty uses storage/skylanders/figures.",
             "Storage");
+namespace xe::hid {
+void PersistPortalBackend(const std::string& value) {
+  OVERRIDE_PERSIST_string(portal_backend, value);
+}
+}  // namespace xe::hid

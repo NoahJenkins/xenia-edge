@@ -24,6 +24,7 @@ class VirtualPortal {
   VirtualPortal(std::filesystem::path storage_root,
                 std::filesystem::path library_root);
   PortalManagerSnapshot Snapshot() const;
+  PortalLibrarySnapshot ListLibrary() const;
   PortalOperationResult Apply(const PortalOperation& operation);
 
  private:

@@ -9,7 +9,9 @@
 #include "xenia/hid/portal/virtual_portal.h"
 
 #include <algorithm>
+#include <cctype>
 #include <fstream>
+#include <set>
 
 #include "xenia/base/xxhash.h"
 
@@ -76,7 +78,125 @@ PortalManagerSnapshot VirtualPortal::Snapshot() const {
   PortalManagerSnapshot result;
   result.backend = PortalBackendKind::kVirtual;
   result.slots = slots_.Snapshot();
+  result.management_ready = ready_;
   result.errors = errors_;
+  for (size_t i = 0; i < records_.size(); ++i) {
+    if (records_[i]) {
+      result.figure_paths[i] = library_root_ / records_[i]->relative_path;
+    }
+  }
+  return result;
+}
+
+PortalLibrarySnapshot VirtualPortal::ListLibrary() const {
+  PortalLibrarySnapshot result;
+  result.root = library_root_;
+  result.errors = errors_;
+  if (!session_) {
+    return result;
+  }
+  auto session = session_->Load();
+  result.ready = ready_ && !session.fatal;
+  result.errors.insert(result.errors.end(), session.errors.begin(),
+                       session.errors.end());
+  std::set<std::filesystem::path> pending;
+  for (const auto& item : session.session.pending_saves) {
+    pending.insert(item.relative_path);
+  }
+  auto add = [&](const std::filesystem::path& path) {
+    PortalLibraryEntry entry;
+    entry.path = path;
+    const auto relative = path.lexically_relative(library_root_);
+    entry.name = PortalSessionStore::Utf8(relative);
+    entry.recovery_required = pending.contains(relative);
+    std::error_code error;
+    const auto canonical = std::filesystem::canonical(path, error);
+    const bool contained =
+        !error && PortalSessionStore::SafeRelativePath(
+                      canonical.lexically_relative(library_root_));
+    const auto status = contained ? std::filesystem::status(canonical, error)
+                                  : std::filesystem::file_status{};
+    const auto writable = std::filesystem::perms::owner_write |
+                          std::filesystem::perms::group_write |
+                          std::filesystem::perms::others_write;
+    entry.read_only = !error && (status.permissions() & writable) ==
+                                    std::filesystem::perms::none;
+    if (contained && !error && std::filesystem::is_regular_file(status) &&
+        std::filesystem::file_size(canonical, error) == kFigureSize && !error) {
+      std::array<uint8_t, kFigureSize> bytes{};
+      std::ifstream input(canonical, std::ios::binary);
+      input.read(reinterpret_cast<char*>(bytes.data()), bytes.size());
+      if (input && input.gcount() == kFigureSize &&
+          input.peek() == std::char_traits<char>::eof()) {
+        auto image = FigureImage::Parse(bytes, entry.validation);
+        if (image) {
+          entry.identity = image->identity();
+        }
+      }
+    }
+    if (!entry.validation.structure_checked) {
+      entry.validation.issues.push_back(
+          {FigureValidationCode::kWrongSize, FigureIssueSeverity::kError, 0,
+           "Cannot read a complete 1,024-byte figure"});
+    }
+    for (size_t i = 0; i < records_.size(); ++i) {
+      if (records_[i] && records_[i]->relative_path == relative) {
+        entry.mounted_slot = static_cast<PortalSlot>(i);
+      }
+    }
+    const auto loaded = handles_.find(canonical);
+    if (loaded != handles_.end() && !entry.recovery_required) {
+      entry.changed =
+          figures_->ReadBlock(loaded->second, 0).error != FigureIoError::kNone;
+    }
+    result.entries.push_back(std::move(entry));
+  };
+  // Keep recovery entries visible even when a large library hits its limit.
+  for (const auto& relative : pending) {
+    add(library_root_ / relative);
+  }
+  std::error_code error;
+  std::filesystem::recursive_directory_iterator it(
+      library_root_, std::filesystem::directory_options::none, error),
+      end;
+  size_t examined = 0;
+  while (!error && it != end && examined++ < 4096 &&
+         result.entries.size() < 1024) {
+    const auto path = it->path();
+    const auto status = it->symlink_status(error);
+    if (error) {
+      break;
+    }
+    if (it.depth() >= 4) {
+      it.disable_recursion_pending();
+    }
+    if (!std::filesystem::is_symlink(status) &&
+        std::filesystem::is_regular_file(status)) {
+      auto extension = PortalSessionStore::Utf8(path.extension());
+      std::transform(
+          extension.begin(), extension.end(), extension.begin(),
+          [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+      if (extension == ".sky" || extension == ".bin" || extension == ".dump" ||
+          extension == ".dmp" ||
+          pending.contains(path.lexically_relative(library_root_))) {
+        if (pending.contains(path.lexically_relative(library_root_))) {
+          it.increment(error);
+          continue;
+        }
+        add(path);
+      }
+    }
+    it.increment(error);
+  }
+  if (error) {
+    result.errors.push_back("Cannot read the whole figure library");
+  }
+  if (it != end) {
+    result.errors.push_back(
+        "Library scan limit reached; use a smaller library folder");
+  }
+  std::sort(result.entries.begin(), result.entries.end(),
+            [](const auto& a, const auto& b) { return a.name < b.name; });
   return result;
 }
 
@@ -195,7 +315,26 @@ PortalOperationResult VirtualPortal::Apply(const PortalOperation& operation) {
     return {true, {}};
   }
   if (operation.kind == PortalOperationKind::kRecover) {
+    const auto before = session_->Load();
+    std::error_code path_error;
+    const auto resolved =
+        std::filesystem::weakly_canonical(operation.path, path_error);
+    const auto relative = resolved.lexically_relative(library_root_);
+    const auto pending_at_path = [&](const SessionLoadResult& state) {
+      return std::any_of(
+          state.session.pending_saves.begin(),
+          state.session.pending_saves.end(),
+          [&](const auto& item) { return item.relative_path == relative; });
+    };
+    const bool was_pending =
+        !path_error && !before.fatal && pending_at_path(before);
     auto recovered = figures_->Recover(operation.path);
+    if (was_pending && recovered.error == FigureStoreError::kUnavailable) {
+      const auto after = session_->Load();
+      if (!after.fatal && !pending_at_path(after)) {
+        return {true, {}};
+      }
+    }
     if (recovered.error != FigureStoreError::kNone || !recovered.handle) {
       return {false, "Figure recovery did not complete", recovered.error,
               recovered.persistence};
@@ -210,6 +349,11 @@ PortalOperationResult VirtualPortal::Apply(const PortalOperation& operation) {
   }
   if (operation.source_slot >= kPortalSlotCount) {
     return Failure("Invalid portal slot");
+  }
+  if (operation.expected_generation &&
+      slots_.Get(operation.source_slot)->generation !=
+          *operation.expected_generation) {
+    return Failure("The selected slot changed; select it again");
   }
   if (operation.kind == PortalOperationKind::kExport) {
     const auto slot = slots_.Get(operation.source_slot);

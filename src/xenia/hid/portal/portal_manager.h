@@ -45,6 +45,7 @@ struct PortalOperation {
   std::filesystem::path path;
   std::filesystem::path destination;
   bool overwrite_confirmed = false;
+  std::optional<uint64_t> expected_generation;
 };
 struct PortalOperationResult {
   bool success = false;
@@ -57,9 +58,28 @@ struct PortalManagerSnapshot {
   // Guest access remains false for virtual mode until Xbox wire behavior is
   // verified. Slots are still available to the management interface.
   bool connected = false;
+  bool management_ready = false;
   std::array<PortalSlotSnapshot, kPortalSlotCount> slots =
       PortalSlotState{}.Snapshot();
   std::vector<std::string> errors;
+  std::array<std::filesystem::path, kPortalSlotCount> figure_paths;
+};
+
+struct PortalLibraryEntry {
+  std::filesystem::path path;
+  std::string name;
+  std::optional<FigureIdentity> identity;
+  FigureValidationReport validation;
+  std::optional<PortalSlot> mounted_slot;
+  bool read_only = false;
+  bool changed = false;
+  bool recovery_required = false;
+};
+struct PortalLibrarySnapshot {
+  std::filesystem::path root;
+  std::vector<PortalLibraryEntry> entries;
+  std::vector<std::string> errors;
+  bool ready = false;
 };
 
 class PortalManager {
@@ -74,10 +94,16 @@ class PortalManager {
   void OnDeviceArrival();
   void OnDeviceRemoval();
   PortalManagerSnapshot Snapshot() const;
+  PortalLibrarySnapshot ListLibrary() const;
+  PortalOperationResult SelectBackend(PortalBackendKind backend,
+                                      bool title_active);
   PortalOperationResult Apply(const PortalOperation& operation);
 
  private:
+  void InitializeBackend(PortalBackendKind backend);
   mutable std::mutex mutex_;
+  std::filesystem::path storage_root_;
+  std::filesystem::path library_root_;
   PortalBackendKind backend_ = PortalBackendKind::kDisabled;
   std::unique_ptr<Portal> physical_;
   std::unique_ptr<VirtualPortal> virtual_;

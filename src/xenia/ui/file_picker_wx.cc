@@ -101,7 +101,7 @@ bool WxFilePicker::Show(Window* parent_window) {
       style |= wxFD_MULTIPLE;
     }
   } else {
-    style = wxFD_SAVE | wxFD_OVERWRITE_PROMPT;
+    style = wxFD_SAVE | (overwrite_prompt() ? wxFD_OVERWRITE_PROMPT : 0);
   }
 
   int result = wxID_CANCEL;

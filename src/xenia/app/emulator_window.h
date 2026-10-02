@@ -25,6 +25,7 @@
 #include "xenia/ui/imgui_drawer.h"
 #include "xenia/ui/imgui_performance_dialog.h"
 #include "xenia/ui/imgui_postprocessing_dialog.h"
+#include "xenia/ui/imgui_skylanders_portal_dialog.h"
 #include "xenia/ui/immediate_drawer.h"
 #include "xenia/ui/menu_item.h"
 #include "xenia/ui/presenter.h"
@@ -101,6 +102,7 @@ class EmulatorWindow {
 
   void ToggleProfilesConfigDialog();
   void ToggleAudioDialog();
+  void ToggleSkylandersPortalDialog();
   void ToggleConfigDialog();
   void OpenConfigDialog(const std::string& category = "");
   void ToggleControllerVibration();
@@ -268,6 +270,7 @@ class EmulatorWindow {
   ui::ImGuiDebugDialog* debug_dialog_ = nullptr;
   ProfileConfigDialog* profile_dialog_ = nullptr;
   ui::ImGuiAudioDialog* audio_dialog_ = nullptr;
+  ui::ImGuiSkylandersPortalDialog* skylanders_portal_dialog_ = nullptr;
   ui::ImGuiContextMenu* context_menu_ = nullptr;
 
   GameListPanel* game_list_panel_ = nullptr;

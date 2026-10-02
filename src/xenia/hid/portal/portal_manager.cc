@@ -34,10 +34,16 @@ PortalBackendKind DefaultPortalBackend() {
 PortalManager::PortalManager(std::filesystem::path storage_root,
                              PortalBackendKind requested_backend,
                              std::filesystem::path library_root)
-    : backend_(requested_backend) {
+    : storage_root_(std::move(storage_root)),
+      library_root_(std::move(library_root)) {
+  InitializeBackend(requested_backend);
+}
+void PortalManager::InitializeBackend(PortalBackendKind backend) {
+  physical_.reset();
+  virtual_.reset();
+  backend_ = backend;
   if (backend_ == PortalBackendKind::kVirtual) {
-    virtual_ = std::make_unique<VirtualPortal>(std::move(storage_root),
-                                               std::move(library_root));
+    virtual_ = std::make_unique<VirtualPortal>(storage_root_, library_root_);
   } else if (backend_ == PortalBackendKind::kPhysical) {
 #ifdef XE_PLATFORM_WIN32
     physical_ = std::make_unique<HardwarePortal>();
@@ -94,5 +100,26 @@ PortalOperationResult PortalManager::Apply(const PortalOperation& operation) {
     return {false, "Virtual portal is not selected"};
   }
   return virtual_->Apply(operation);
+}
+PortalLibrarySnapshot PortalManager::ListLibrary() const {
+  std::lock_guard guard(mutex_);
+  return virtual_ ? virtual_->ListLibrary() : PortalLibrarySnapshot{};
+}
+PortalOperationResult PortalManager::SelectBackend(PortalBackendKind backend,
+                                                   bool title_active) {
+  std::lock_guard guard(mutex_);
+  if (backend == backend_) {
+    return {true, {}};
+  }
+  if (title_active) {
+    return {false, "Stop the game before changing portal mode"};
+  }
+#ifndef XE_PLATFORM_WIN32
+  if (backend == PortalBackendKind::kPhysical) {
+    return {false, "Physical portals are available on Windows only"};
+  }
+#endif
+  InitializeBackend(backend);
+  return {true, {}};
 }
 }  // namespace xe::hid

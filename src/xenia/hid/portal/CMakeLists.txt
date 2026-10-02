@@ -3,6 +3,7 @@ add_library(xenia-hid-portal STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/portal.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/portal_flags.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/portal_manager.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/portal_dialog_model.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/virtual_portal.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/portal_slot_state.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/xbox360_portal_protocol.cc

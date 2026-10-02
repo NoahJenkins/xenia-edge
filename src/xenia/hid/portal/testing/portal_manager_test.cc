@@ -219,4 +219,97 @@ TEST_CASE("Portal manager persists replacement and rejects duplicate slots",
                              fixture.root / "skylanders");
   REQUIRE(session.Load().session.entries[0].relative_path == second.filename());
 }
+TEST_CASE(
+    "Library inspection reports invalid files and detects stale slot actions",
+    "[skylanders][manager][library]") {
+  Fixture fixture;
+  const auto figure = fixture.Figure("valid.sky");
+  {
+    std::ofstream invalid(figure.parent_path() / "invalid.sky");
+    invalid << "invalid";
+  }
+  PortalManager manager(fixture.root, PortalBackendKind::kVirtual);
+  auto library = manager.ListLibrary();
+  REQUIRE(library.ready);
+  REQUIRE(library.entries.size() == 2);
+  REQUIRE_FALSE(library.entries[0].validation.IsSafeToLoad());
+  REQUIRE(library.entries[1].validation.IsSafeToLoad());
+  REQUIRE(library.entries[1].identity.has_value());
+  REQUIRE(manager.Apply({PortalOperationKind::kAdd, 0, 0, figure}).success);
+  PortalOperation stale{PortalOperationKind::kRemove};
+  stale.expected_generation = manager.Snapshot().slots[0].generation;
+  REQUIRE(manager.Apply({PortalOperationKind::kRemove, 0}).success);
+  REQUIRE(manager.Apply({PortalOperationKind::kAdd, 0, 0, figure}).success);
+  REQUIRE_FALSE(manager.Apply(stale).success);
+  REQUIRE(manager.Snapshot().slots[0].figure.has_value());
+  library = manager.ListLibrary();
+  REQUIRE(library.entries[1].mounted_slot == 0);
+  {
+    std::ofstream changed(figure, std::ios::app);
+    changed << "changed";
+  }
+  REQUIRE(manager.ListLibrary().entries[1].changed);
+}
+TEST_CASE("Backend changes are limited to stopped titles",
+          "[skylanders][manager]") {
+  Fixture fixture;
+  PortalManager manager(fixture.root, PortalBackendKind::kDisabled);
+  REQUIRE_FALSE(
+      manager.SelectBackend(PortalBackendKind::kVirtual, true).success);
+  REQUIRE(manager.Snapshot().backend == PortalBackendKind::kDisabled);
+  REQUIRE(manager.SelectBackend(PortalBackendKind::kVirtual, false).success);
+  REQUIRE(manager.Snapshot().management_ready);
+  REQUIRE_FALSE(manager.IsConnected());
+  REQUIRE_FALSE(
+      manager.SelectBackend(PortalBackendKind::kDisabled, true).success);
+  REQUIRE(manager.SelectBackend(PortalBackendKind::kDisabled, false).success);
+}
+TEST_CASE(
+    "Library inspection confines pending paths and clears missing imports",
+    "[skylanders][manager][library]") {
+  Fixture fixture;
+  const auto outside = fixture.root / "outside.sky";
+  const auto bytes = testing::MakeSyntheticFigureBytes(1, 2, {3, 4, 5, 6});
+  {
+    std::ofstream output(outside, std::ios::binary);
+    output.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+  }
+  const auto library = fixture.root / "skylanders" / "figures";
+  std::filesystem::create_directories(library);
+  std::error_code link_error;
+  std::filesystem::create_symlink(outside, library / "linked.sky", link_error);
+  PortalSessionStore session(library, CreateNativeAtomicFileWriter(),
+                             fixture.root / "skylanders");
+  PortalSession state;
+  state.pending_saves.push_back(
+      {"missing.sky", std::string(64, '0'), std::string(64, '1')});
+  if (!link_error) {
+    state.pending_saves.push_back(
+        {"linked.sky", std::string(64, '0'), std::string(64, '1')});
+  }
+  REQUIRE(session.Save(state).success());
+  PortalManager manager(fixture.root, PortalBackendKind::kVirtual);
+  const auto snapshot = manager.ListLibrary();
+  REQUIRE(snapshot.entries.size() == (link_error ? 1 : 2));
+  for (const auto& entry : snapshot.entries) {
+    REQUIRE(entry.recovery_required);
+    REQUIRE_FALSE(entry.identity);
+    REQUIRE_FALSE(entry.validation.IsSafeToLoad());
+  }
+  REQUIRE(
+      manager
+          .Apply({PortalOperationKind::kRecover, 0, 0, library / "missing.sky"})
+          .success);
+  REQUIRE_FALSE(
+      manager
+          .Apply({PortalOperationKind::kRecover, 0, 0, library / "missing.sky"})
+          .success);
+  REQUIRE(session.Load().session.pending_saves.size() == (link_error ? 0 : 1));
+  if (!link_error) {
+    REQUIRE_FALSE(manager
+                      .Apply({PortalOperationKind::kRecover, 0, 0,
+                              library / "linked.sky"})
+                      .success);
+  }
+}
 }  // namespace xe::hid

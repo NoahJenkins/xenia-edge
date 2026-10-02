@@ -527,6 +527,9 @@ EmulatorWindow::~EmulatorWindow() {
     Gamepad_HotKeys_Listener.reset();
   }
 
+  delete skylanders_portal_dialog_;
+  skylanders_portal_dialog_ = nullptr;
+
   // Notify the ImGui drawer that the immediate drawer is being destroyed.
   ShutdownGraphicsSystemPresenterPainting();
 }
@@ -1128,6 +1131,9 @@ bool EmulatorWindow::Initialize() {
           WxMenuItem::Create(MenuItem::Type::kString, _("&Install Content..."),
                              std::bind(&EmulatorWindow::InstallContent, this)));
     }
+    tools_menu->AddChild(
+        WxMenuItem::Create(MenuItem::Type::kString, _("&Skylanders Portal..."),
+                           [this]() { ToggleSkylandersPortalDialog(); }));
     tools_menu_ = tools_menu.get();
     main_menu->AddChild(std::move(tools_menu));
 
@@ -1690,6 +1696,8 @@ void EmulatorWindow::ToggleContextMenu(bool use_cursor_position) {
                           [this]() { ToggleProfilesConfigDialog(); });
 
   context_menu->AddAction("Audio", [this]() { ToggleAudioDialog(); });
+  context_menu->AddAction("Skylanders Portal",
+                          [this]() { ToggleSkylandersPortalDialog(); });
 
   context_menu->AddSeparator();
 
@@ -2025,7 +2033,8 @@ void EmulatorWindow::ApplyContentVisibility() {
 
   bool fullscreen = window_->IsFullscreen();
   bool title_open = emulator_ && emulator_->is_title_open();
-  bool render_active = title_open || target_pending_launch_;
+  bool render_active =
+      title_open || target_pending_launch_ || skylanders_portal_dialog_;
   bool show_render = fullscreen || render_active;
   bool show_list = !fullscreen && !render_active;
 
@@ -2875,6 +2884,41 @@ void EmulatorWindow::ToggleAudioDialog() {
   });
   // The dialog draws on the UI thread, so refresh the icon directly (live).
   audio_dialog_->SetOnChangeCallback([this]() { RefreshAudioIcon(); });
+}
+
+void EmulatorWindow::ToggleSkylandersPortalDialog() {
+  if (skylanders_portal_dialog_) {
+    skylanders_portal_dialog_->CloseDialog();
+    return;
+  }
+  auto* input = emulator()->input_system();
+  if (!input || !input->GetPortal()) {
+    return;
+  }
+  skylanders_portal_dialog_ =
+      new ui::ImGuiSkylandersPortalDialog(imgui_drawer(), input, [this]() {
+        return emulator_->is_title_open() || target_pending_launch_;
+      });
+  skylanders_portal_dialog_->SetOnCloseCallback([this]() {
+    skylanders_portal_dialog_ = nullptr;
+    ApplyContentVisibility();
+  });
+  ApplyContentVisibility();
+  // The game list starts without graphics/audio subsystems. Show the surface
+  // before setting up a presenter so a pre-launch dialog can draw as well.
+  if (!emulator_->graphics_system()) {
+    if (XFAILED(emulator_->SetupSubsystems())) {
+      delete skylanders_portal_dialog_;
+      skylanders_portal_dialog_ = nullptr;
+      ApplyContentVisibility();
+      wxMessageBox(
+          _("Cannot open the portal manager. Check xenia.log for details."),
+          _("Skylanders Portal"), wxOK | wxICON_ERROR);
+      return;
+    }
+  }
+  SetupGraphicsSystemPresenterPainting();
+  window_->RequestPaint();
 }
 
 void EmulatorWindow::ToggleMute() {
@@ -3922,6 +3966,10 @@ std::filesystem::path EmulatorWindow::GetFilePickerInitialDirectory() const {
 }
 
 void EmulatorWindow::ClearDialogs() {
+  // Cancel deferred pickers and release the input blocker before input
+  // teardown.
+  delete skylanders_portal_dialog_;
+  skylanders_portal_dialog_ = nullptr;
   if (postprocessing_dialog_) {
     postprocessing_dialog_->CloseDialog();
     postprocessing_dialog_ = nullptr;
