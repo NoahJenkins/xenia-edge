@@ -6,10 +6,19 @@ name: Build (reusable)
 on:
   workflow_call:
 
+# The github context is inherited from CI.yml, including the original PR head
+# repository. Never infer fork trust from the actor (including Dependabot).
+# GitHub string equality ignores case; fromJSON additionally requires the exact
+# JSON literal true. Misspelled TRUE/True fails closed before runner assignment.
+# Keep OPTIPLEX_CI_ENABLED unset or false until disposable VM acceptance.
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-24.04
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' ||
+           github.event.pull_request.head.repo.full_name == github.repository) &&
+          vars.OPTIPLEX_CI_ENABLED == 'true' && fromJSON(vars.OPTIPLEX_CI_ENABLED) &&
+          'optiplex-ci-ubuntu24' || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@v6
       - name: Setup
@@ -24,7 +33,11 @@ jobs:
     needs: lint
     # Build on the oldest supported LTS so the AppImage's glibc floor (taken from
     # the build host) stays low enough for Ubuntu 22.04 / Debian 12 users.
-    runs-on: ubuntu-22.04
+    runs-on: >-
+      ${{ (github.event_name != 'pull_request' ||
+           github.event.pull_request.head.repo.full_name == github.repository) &&
+          vars.OPTIPLEX_CI_ENABLED == 'true' && fromJSON(vars.OPTIPLEX_CI_ENABLED) &&
+          'optiplex-ci-ubuntu22' || 'ubuntu-22.04' }}
     steps:
       - uses: actions/checkout@v6
         with:
