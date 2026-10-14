@@ -118,6 +118,46 @@ Linux VM (the local Docker daemon is unavailable). Local lint on macOS with the
 pinned formatter is only a preparation check. Hosted Ubuntu CI, if successful,
 is compatibility evidence; it is not evidence of Dell execution or cleanup.
 
+### Hosted preparation evidence
+
+The branch-push [caller CI run 38483940510](https://github.com/NoahJenkins/xenia-edge/actions/runs/38483940510)
+at workflow implementation commit `93059565b2e28d4cc28c5e88ae09311acee7e5ba`
+passed Lint and all four platform builds. Create Release was skipped. The
+subsequent documentation commit changes no workflow, application or test code;
+this run is evidence at the implementation commit, not final-head Dell acceptance.
+
+- Lint passed on hosted Ubuntu 24.04 in 46 seconds using the unchanged command
+  and pinned formatter. The local macOS lint check also passed (1,052 files).
+- Linux passed on hosted Ubuntu **22.04.5**, runner `GitHub Actions 1000015653`,
+  label `ubuntu-22.04`, using Clang **21.1.8**. Its token permissions were
+  `actions: write`, `contents: read`, `metadata: read`.
+- Linux job wall time was **36m34s**, including **33m55s** in Build and **15s**
+  in Prepare artifacts. sccache reported **73 hits**, **1,855 misses** and a
+  **3.79%** hit rate. Peak memory, CPU allocation and disk use were not measured;
+  hosted timings are not Dell performance measurements.
+- Normal `gh run download` from the caller run succeeded for `xenia_edge_linux`.
+  The raw artifact ZIP contains exactly `LICENSE` and `xenia_edge.AppImage`;
+  ZIP CRCs pass and its SHA256 matches GitHub's artifact digest:
+  `6b8c2c3a90b6579b64c14bf95b0df7b51faa0007ef455ad86cfb5d22cd08ddcc`.
+- AppImage SHA256:
+  `e7ebe7b0ef3dac5b976cc90ebe28fa126adc3a7878c6457b3df4d2b3942e6527`.
+  Static inspection of its squashfs payload found **120 file/symlink paths**
+  and **59 ELF files**. The AppImage runtime, executable and bundled ELF files
+  are x86-64. LICENSE, desktop file and all eight icon sizes match source;
+  the executable retains executable permissions inside the image.
+- Maximum **required** symbol versions across the payload are **GLIBC_2.35**,
+  **GLIBCXX_3.4.32**, and **CXXABI_1.3.13**. linuxdeploy's log confirms it excludes
+  `libstdc++.so.6`; the C++ runtime must be supplied by the target system.
+  These ABI maxima and the complete path inventory match the prior hosted
+  artifact from run `37053821049`; this comparison does not assert identical
+  binaries between different source commits. The glibc floor alone does not
+  establish compatibility with every distribution's default C++ runtime.
+
+The caller's release download step remains guarded and skipped on this fork;
+the normal caller-run artifact API was exercised without publishing a release.
+Actual fork execution with opt-in enabled, Dell resources, guest isolation and
+controller cleanup remain unverified.
+
 After infrastructure acceptance, record all of the following at the exact PR
 head SHA before declaring migration accepted:
 
@@ -148,7 +188,9 @@ head SHA before declaring migration accepted:
    ELF and run `readelf --version-info` on each. Record **required**, not merely
    defined, GLIBC and GLIBCXX/CXXABI versions; required GLIBC must be <=2.35.
    Check `readelf -d` NEEDED/RPATH/RUNPATH and resolve dependencies in the
-   extracted AppDir so bundled libstdc++ satisfies GCC 14's requirements.
+   extracted AppDir. Determine whether libstdc++ is bundled or supplied by the
+   target system; verify that provider satisfies the required GLIBCXX/CXXABI
+   versions. Do not assume GCC 14 headers imply a bundled GCC 14 runtime.
    Compare contents against hosted packaging at the same source/head; never
    infer the baseline solely from an Ubuntu label or a green lint job.
 5. Exercise a normal fork PR through CI.yml (including a Dependabot fork case):
@@ -160,9 +202,8 @@ head SHA before declaring migration accepted:
    success, failure, cancellation and timeout. Runner unregistration alone is
    not disk-cleanup proof.
 
-At preparation time no Dell build, packaging/resource measurements, runtime
-baseline, downloaded artifact inspection, real fork run or cleanup proof is
-claimed. These are live acceptance requirements, not reasons to activate early.
+No Dell execution, Dell resource measurements, real fork run with opt-in enabled
+or controller cleanup proof is claimed. These remain live acceptance requirements.
 
 ## Rollback
 
