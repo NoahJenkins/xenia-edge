@@ -23,7 +23,7 @@ jobs:
       github.repository == 'NoahJenkins/xenia-edge' &&
       github.actor == 'NoahJenkins' &&
       github.triggering_actor == 'NoahJenkins' &&
-      github.ref == 'refs/heads/edge'
+      github.ref == 'refs/heads/codex/dell-ci-denied-source'
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
     strategy:
